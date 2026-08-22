@@ -1,0 +1,31 @@
+name: Bug report
+description: Report incorrect detection, cleaning, or preservation
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: input
+    attributes:
+      label: Minimal input
+      description: Use escaped code points when the original text is sensitive.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: OS and architecture
+    validations:
+      required: true

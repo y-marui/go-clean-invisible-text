@@ -1,0 +1,31 @@
+name: Policy or feature proposal
+description: Propose a behavior, character-policy, or integration change
+title: "proposal: "
+labels:
+  - decision-needed
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Text-preservation and compatibility impact
+    validations:
+      required: true
+  - type: checkboxes
+    id: persistence
+    attributes:
+      label: Source of truth
+      options:
+        - label: I understand that accepted behavior must be written to a specification or ADR before this issue is closed.
+          required: true
