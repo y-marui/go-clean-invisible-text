@@ -186,7 +186,31 @@ jobs:
       contents: write
       pull-requests: write
       actions: read
+
+  gate:
+    name: Dev Charter
+    needs: [check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify dev-charter check did not fail
+        run: |
+          result="${{ needs.check.result }}"
+          if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            echo "::error::dev-charter check did not succeed (got: $result)"
+            exit 1
+          fi
+          echo "check result: $result (skipped is fine — draft or dependabot)"
 ```
+
+> **Note:** dependabot が作成した PR や draft PR では `check` 自体がスキップされます
+> （後述）。`gate` はその場合も `skipped` を正常として扱い、必ず `Dev Charter`（ワークフロー
+> 自身の `name:` と同じ値）を報告します。Branch Protection（Ruleset）に必須ステータス
+> チェックとして登録するのは `Check / check` ではなく `Dev Charter` です（[CI_POLICY.md
+> の Ruleset 節](topics/CI_POLICY.md#branch-protection-ruleset)参照）。
+> `check` job だけを直接必須チェックに登録すると、skip 時に `Check / check` という
+> コンテキスト自体が一切報告されず、PR が `Expected — Waiting for status to be reported`
+> のまま永久にブロックされます。
 
 > **Note:** dependabot が作成した PR ではスキップされます（依存関係更新だけが動いている間はチェック不要という判断）。
 > repo が完全に静止している間はチェックが走らないため、活動に関わらず定期的に確認したい場合は
