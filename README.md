@@ -189,7 +189,31 @@ jobs:
       contents: write
       pull-requests: write
       actions: read
+
+  gate:
+    name: Dev Charter
+    needs: [check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify dev-charter check did not fail
+        run: |
+          result="${{ needs.check.result }}"
+          if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            echo "::error::dev-charter check did not succeed (got: $result)"
+            exit 1
+          fi
+          echo "check result: $result (skipped is fine — draft or dependabot)"
 ```
+
+> **Note:** `check` is skipped for Dependabot PRs and draft PRs (see below). `gate`
+> treats a `skipped` result as fine in both cases and always reports a `Dev Charter`
+> status (matching this workflow's own `name:`). Register `Dev Charter` — not `Check /
+> check` — as the required status check in Branch Protection (Ruleset); see
+> [CI_POLICY.md's Ruleset section](topics/CI_POLICY.md#branch-protection-ruleset).
+> Registering the `check` job itself is unsafe: when it's skipped, the `Check / check`
+> context is never reported at all, so the PR sits at "Expected — Waiting for status to
+> be reported" forever.
 
 > **Note:** Dependabot PRs are skipped — dependency-only activity doesn't warrant a
 > charter check. If your repository goes fully quiet, no check will run. If you want a
