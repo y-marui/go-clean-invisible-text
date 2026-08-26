@@ -7,6 +7,16 @@ default unless explicitly kept). Nothing passes through silently just
 because nobody thought to list it: a code point that is not explicitly
 Allowed or Blocked is Warned on.
 
+## Unicode version
+
+Code-point classification (general categories such as Mn, Mc, Me, Cf, Co,
+Zs, Zl, Zp) relies entirely on Go's standard library `unicode` package rather
+than a vendored table, so the effective Unicode Character Database version is
+whatever `unicode.Version` reports for the Go toolchain pinned in `go.mod`.
+At `go 1.27.0` that is Unicode **17.0.0**. Bumping the pinned Go version may
+change this value; no separate update to this document is needed unless a
+category assignment used by this policy actually changes between versions.
+
 ## Allow
 
 Preserved unchanged, with no finding. This is a closed, enumerated set.
@@ -34,8 +44,6 @@ Deletion is not used because it would join neighboring words.
 - Unicode noncharacters
 - unsafe control characters other than TAB, LF, and CR
 - a variation selector outside the single-contextual-use case below (see "Variation selectors")
-
-The exact code-point tables must be versioned and covered by table-driven tests before implementation is released.
 
 ## ZWJ and ZWNJ
 
