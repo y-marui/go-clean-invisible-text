@@ -289,6 +289,27 @@ draft PR を自動作成した上で `exit 1`）。schedule トリガーが無�
 それ以外の失敗条件（リモート `VERSION` の取得失敗・ローカル `VERSION` の欠落・push や
 PR 作成時のエラー・GitHub Actions の課金ブロックなど）ももちろん失敗する。
 
+### Epic Branch Ruleset
+
+複数ステップ・sub-issue を持つ大規模な改修用の `epic/<name>` ブランチ（[PROJECT_LIFECYCLE.md](../PROJECT_LIFECYCLE.md) の Branch Strategy 参照）にも、パターンマッチで `main-protection` と同じRulesetを適用する：
+
+```
+Name: epic-protection
+Target: epic/*
+Enforcement: Active
+
+Rules:
+☑ Require a pull request before merging
+  └ Required approvals: 0（個人開発）/ 1以上（複数人）
+☑ Require status checks to pass before merging
+  └ Status checks: Required Checks (GitHub Actions)
+☑ Require conversation resolution before merging
+☑ Block force pushes
+☑ Restrict deletions
+```
+
+`epic/<name>` から `main` へのPRには、通常どおり `main-protection` のRulesetがそのまま適用される。
+
 ### Bypass for Billing-Blocked CI (Private Repos, Provisional)
 
 Private リポジトリは GitHub Actions の課金対象（Public リポジトリは無料）。開発リソースが
