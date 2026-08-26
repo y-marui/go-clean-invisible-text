@@ -27,3 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CLI (`cmd/clean-invisible-text`): `check`, `fix`, `explain`, and `clean`
   commands, `--json` machine-readable output, `--keep-warnings`, and stable
   exit statuses per `docs/specification.md`.
+- pre-commit hooks (`.pre-commit-hooks.yaml`): `clean-invisible-text-check`
+  (detect only) and `clean-invisible-text-fix` (clean, then fail so the
+  change is reviewed), plus an end-to-end fixture
+  (`test/precommit/precommit_test.go`) and installation docs covering both
+  the Go-source and pre-installed-binary paths
+  (`docs/integrations/pre-commit.md`).

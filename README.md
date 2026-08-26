@@ -12,9 +12,9 @@
 A cross-platform Go CLI for detecting, explaining, and safely cleaning
 dangerous invisible Unicode characters in UTF-8 plain text.
 
-> **Status:** v0.1 in progress. `check`/`fix`/`explain`/`clean` are
-> implemented; pre-commit packaging and cross-platform release automation are
-> not yet (see the
+> **Status:** v0.1 in progress. `check`/`fix`/`explain`/`clean` and pre-commit
+> packaging are implemented; cross-platform release automation is not yet
+> (see the
 > [roadmap](https://github.com/y-marui/go-clean-invisible-text/issues/1)).
 
 ## Requirements
@@ -70,7 +70,21 @@ in GitHub Issues, not in specification files.
 - [docs/security-model.md](docs/security-model.md) — security model
 - [docs/cli.md](docs/cli.md) — CLI contract
 - [docs/architecture.md](docs/architecture.md) — architecture
+- [docs/integrations/pre-commit.md](docs/integrations/pre-commit.md) — pre-commit hook contract
 - [docs/decisions/](docs/decisions/) — architecture decision records (ADRs)
+
+## pre-commit Integration
+
+```yaml
+repos:
+  - repo: https://github.com/y-marui/go-clean-invisible-text
+    rev: vX.Y.Z # pin to a released tag
+    hooks:
+      - id: clean-invisible-text-check
+      - id: clean-invisible-text-fix
+```
+
+Full contract, including the pre-installed-binary option: [docs/integrations/pre-commit.md](docs/integrations/pre-commit.md).
 
 ## Alfred Integration
 
