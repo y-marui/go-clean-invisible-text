@@ -11,8 +11,9 @@
 
 UTF-8 プレーンテキスト中の危険な不可視 Unicode 文字を検出・説明し、安全にクリーニングするクロスプラットフォーム対応の Go CLI。
 
-> **Status:** v0.1 進行中。`check`/`fix`/`explain`/`clean`、pre-commit
-> パッケージング、クロスプラットフォームリリース自動化は実装済み。タグ付きリリースはまだ未公開
+> **Status:** v1.0.0 リリース済み。`check`/`fix`/`explain`/`clean`、pre-commit
+> パッケージング、クロスプラットフォームリリース自動化、v1.0 互換性・サポート方針
+> ([ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md)) をすべて出荷済み
 > ([ロードマップ](https://github.com/y-marui/go-clean-invisible-text/issues/1) 参照)。
 
 ## Requirements
