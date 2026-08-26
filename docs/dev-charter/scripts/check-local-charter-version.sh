@@ -35,7 +35,9 @@ fi
 
 if [[ "$LOCAL" > "$INSTALLED" ]]; then
   echo "error: ${LOCAL_CHARTER} の ${LOCAL_REF} ブランチの VERSION (${LOCAL}) が ${PREFIX}/VERSION (${INSTALLED}) より新しいです。"
-  echo "  git subtree pull で dev-charter を更新してからコミットしてください。"
+  echo "  1. git subtree pull で dev-charter を更新する"
+  echo "  2. ${PREFIX}/UPDATE_CHECKLIST.md の手順を実行し、変更されたファイルの影響を確認・反映する（このコミットの前に行うこと。無視・後回しにしない）"
+  echo "  3. 上記が完了してから、元のコミットをやり直す"
   exit 1
 fi
 
