@@ -40,6 +40,8 @@ type Options struct {
 	// AllowSymlink permits mutating a file reached through a symbolic link.
 	// The zero value (false) matches the spec's reject-by-default behavior.
 	AllowSymlink bool
+	// KeepWarnings is forwarded to cleaner.Options.KeepWarnings.
+	KeepWarnings bool
 }
 
 // Result is the outcome of File.
@@ -83,7 +85,7 @@ func File(path string, opts Options) (Result, error) {
 		return Result{}, fmt.Errorf("%w: %s", ErrBinary, path)
 	}
 
-	cleaned, err := cleaner.Clean(data)
+	cleaned, err := cleaner.Clean(data, cleaner.Options{KeepWarnings: opts.KeepWarnings})
 	if err != nil {
 		return Result{}, fmt.Errorf("mutate: %s: %w", path, err)
 	}

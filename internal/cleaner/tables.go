@@ -7,20 +7,24 @@
 // bidi-control characters the engine is built to detect.
 package cleaner
 
+import "unicode"
+
 // Category classifies why a code point was changed.
 type Category string
 
 const (
-	CategoryBidiControl  Category = "bidi-control"
-	CategoryTag          Category = "tag"
-	CategoryNoncharacter Category = "noncharacter"
-	CategoryControl      Category = "control"
-	CategoryNBSP         Category = "nbsp"
-	CategoryBOM          Category = "bom"
-	CategorySoftHyphen   Category = "soft-hyphen"
-	CategoryZWSP         Category = "zwsp"
-	CategoryWordJoiner   Category = "word-joiner"
-	CategoryJoiner       Category = "zwj-zwnj"
+	CategoryBidiControl       Category = "bidi-control"
+	CategoryTag               Category = "tag"
+	CategoryNoncharacter      Category = "noncharacter"
+	CategoryControl           Category = "control"
+	CategoryNBSP              Category = "nbsp"
+	CategoryBOM               Category = "bom"
+	CategorySoftHyphen        Category = "soft-hyphen"
+	CategoryZWSP              Category = "zwsp"
+	CategoryWordJoiner        Category = "word-joiner"
+	CategoryJoiner            Category = "zwj-zwnj"
+	CategoryVariationSelector Category = "variation-selector"
+	CategoryUnclassified      Category = "unclassified"
 )
 
 // ActionKind is what the engine did to a code point.
@@ -29,6 +33,7 @@ type ActionKind string
 const (
 	ActionRemove  ActionKind = "remove"
 	ActionReplace ActionKind = "replace"
+	ActionWarn    ActionKind = "warn"
 )
 
 const (
@@ -89,6 +94,50 @@ func isUnsafeControl(r rune) bool {
 	return false
 }
 
+// isVariationSelector reports whether r is one of the 256 Unicode variation
+// selectors (U+FE00-U+FE0F, U+E0100-U+E01EF). These are handled contextually
+// (see resolveVariationSelectorRun in cleaner.go), not by classify, because a
+// run of several in sequence is a documented steganography/ASCII-smuggling
+// technique (see docs/character-policy.md).
+func isVariationSelector(r rune) bool {
+	return (r >= 0xFE00 && r <= 0xFE0F) || (r >= 0xE0100 && r <= 0xE01EF)
+}
+
+// isWhitelisted reports whether r is explicitly allowed to pass through
+// unchanged, per the "Allow" section of docs/character-policy.md: ordinary
+// and ideographic space, and combining marks (Unicode categories Mn, Mc,
+// Me). TAB/LF/CR and a contextual ZWJ/ZWNJ are preserved elsewhere and are
+// not covered by this function.
+func isWhitelisted(r rune) bool {
+	if r == ' ' || r == '\u3000' {
+		return true
+	}
+	return unicode.In(r, unicode.Mn, unicode.Mc, unicode.Me)
+}
+
+// classifyWarn returns a Warn classification for r when it falls in a
+// Unicode category that is invisible-or-format-like but not explicitly
+// allowed or blocked: Cf (format), Co (private use), Zs/Zl/Zp (space, line,
+// and paragraph separators). This is the "Warn" section of
+// docs/character-policy.md: anything not on the Allow or Block list is
+// flagged rather than silently passed through.
+func classifyWarn(r rune) (classification, bool) {
+	name := ""
+	switch {
+	case unicode.In(r, unicode.Cf):
+		name = "Unicode format character"
+	case unicode.In(r, unicode.Co):
+		name = "Unicode private-use character"
+	case unicode.In(r, unicode.Zs):
+		name = "Unicode space separator"
+	case unicode.In(r, unicode.Zl, unicode.Zp):
+		name = "Unicode line/paragraph separator"
+	default:
+		return classification{}, false
+	}
+	return classification{CategoryUnclassified, ActionWarn, name, ""}, true
+}
+
 // classification is the outcome of classifying a single non-joiner rune.
 type classification struct {
 	category    Category
@@ -125,6 +174,12 @@ func classify(r rune) (classification, bool) {
 	}
 	if isUnsafeControl(r) {
 		return classification{CategoryControl, ActionRemove, "unsafe control character", ""}, true
+	}
+	if isWhitelisted(r) {
+		return classification{}, false
+	}
+	if c, ok := classifyWarn(r); ok {
+		return c, true
 	}
 	return classification{}, false
 }

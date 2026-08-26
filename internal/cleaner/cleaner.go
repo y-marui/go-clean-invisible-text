@@ -9,15 +9,23 @@ import (
 // ErrInvalidUTF8 is returned by Clean when the input is not valid UTF-8.
 var ErrInvalidUTF8 = errors.New("cleaner: invalid UTF-8 input")
 
-// Finding describes one code point the engine changed. There is no Finding
-// for a code point that was preserved unchanged.
+// Options configures Clean.
+type Options struct {
+	// KeepWarnings, if true, preserves Warn-classified code points in
+	// Cleaned instead of removing them. A Finding is still reported either
+	// way — this only controls what ends up in the output bytes.
+	KeepWarnings bool
+}
+
+// Finding describes one code point the engine changed or flagged. There is
+// no Finding for a code point that was preserved unchanged.
 type Finding struct {
 	Offset      int // byte offset in the original input
 	Rune        rune
 	Name        string
 	Category    Category
 	Action      ActionKind
-	Replacement string // "" for ActionRemove, the replacement text for ActionReplace
+	Replacement string // "" for ActionRemove/ActionWarn, the replacement text for ActionReplace
 }
 
 // Result is the outcome of Clean.
@@ -26,16 +34,17 @@ type Result struct {
 	Findings []Finding
 }
 
-// pendingJoiner is one buffered ZWJ/ZWNJ rune awaiting context resolution.
-type pendingJoiner struct {
+// pendingRune is one buffered rune (a ZWJ/ZWNJ or a variation selector)
+// awaiting context resolution.
+type pendingRune struct {
 	offset int
 	r      rune
 }
 
 // Clean processes UTF-8 input in a single deterministic pass and returns the
-// cleaned bytes plus a Finding for every code point that was changed, per
-// docs/character-policy.md.
-func Clean(input []byte) (Result, error) {
+// cleaned bytes plus a Finding for every code point that was changed or
+// flagged, per docs/character-policy.md.
+func Clean(input []byte, opts Options) (Result, error) {
 	if !utf8.Valid(input) {
 		return Result{}, ErrInvalidUTF8
 	}
@@ -43,7 +52,8 @@ func Clean(input []byte) (Result, error) {
 	out := make([]byte, 0, len(input))
 	var findings []Finding
 
-	var run []pendingJoiner
+	var joinerRun []pendingRune
+	var vsRun []pendingRune
 	var prev rune
 	havePrev := false
 
@@ -54,26 +64,26 @@ func Clean(input []byte) (Result, error) {
 		return unicode.IsSpace(r) || unicode.IsControl(r)
 	}
 
-	// resolveRun decides the fate of any buffered ZWJ/ZWNJ run using the rune
-	// immediately before it (prev/havePrev) and the rune immediately after it
-	// (next/haveNext), both from the original input.
-	resolveRun := func(next rune, haveNext bool) {
-		if len(run) == 0 {
+	// resolveJoinerRun decides the fate of any buffered ZWJ/ZWNJ run using
+	// the rune immediately before it (prev/havePrev) and the rune
+	// immediately after it (next/haveNext), both from the original input.
+	resolveJoinerRun := func(next rune, haveNext bool) {
+		if len(joinerRun) == 0 {
 			return
 		}
 		mixed := false
-		for _, pr := range run {
-			if pr.r != run[0].r {
+		for _, pr := range joinerRun {
+			if pr.r != joinerRun[0].r {
 				mixed = true
 				break
 			}
 		}
 		contextOK := !mixed && !isBreak(prev, havePrev) && !isBreak(next, haveNext)
 		if contextOK {
-			out = utf8.AppendRune(out, run[0].r)
-			run = run[1:]
+			out = utf8.AppendRune(out, joinerRun[0].r)
+			joinerRun = joinerRun[1:]
 		}
-		for _, pr := range run {
+		for _, pr := range joinerRun {
 			findings = append(findings, Finding{
 				Offset:   pr.offset,
 				Rune:     pr.r,
@@ -82,7 +92,34 @@ func Clean(input []byte) (Result, error) {
 				Action:   ActionRemove,
 			})
 		}
-		run = nil
+		joinerRun = nil
+	}
+
+	// resolveVSRun decides the fate of any buffered variation-selector run
+	// using only the rune immediately before it (prev/havePrev) — a
+	// variation selector modifies what precedes it, so unlike a joiner it
+	// doesn't need "next" context. A run of more than one, or one with no
+	// valid preceding base character, is the documented steganography shape
+	// (see docs/character-policy.md) and is removed.
+	resolveVSRun := func() {
+		if len(vsRun) == 0 {
+			return
+		}
+		if len(vsRun) == 1 && !isBreak(prev, havePrev) {
+			out = utf8.AppendRune(out, vsRun[0].r)
+			vsRun = nil
+			return
+		}
+		for _, pr := range vsRun {
+			findings = append(findings, Finding{
+				Offset:   pr.offset,
+				Rune:     pr.r,
+				Name:     "VARIATION SELECTOR",
+				Category: CategoryVariationSelector,
+				Action:   ActionRemove,
+			})
+		}
+		vsRun = nil
 	}
 
 	offset := 0
@@ -92,11 +129,19 @@ func Clean(input []byte) (Result, error) {
 		offset += size
 
 		if r == runeZWJ || r == runeZWNJ {
-			run = append(run, pendingJoiner{curOffset, r})
+			resolveVSRun()
+			joinerRun = append(joinerRun, pendingRune{curOffset, r})
 			continue
 		}
 
-		resolveRun(r, true)
+		if isVariationSelector(r) {
+			resolveJoinerRun(r, true)
+			vsRun = append(vsRun, pendingRune{curOffset, r})
+			continue
+		}
+
+		resolveJoinerRun(r, true)
+		resolveVSRun()
 
 		if c, ok := classify(r); ok {
 			findings = append(findings, Finding{
@@ -107,8 +152,13 @@ func Clean(input []byte) (Result, error) {
 				Action:      c.action,
 				Replacement: c.replacement,
 			})
-			if c.action == ActionReplace {
+			switch c.action {
+			case ActionReplace:
 				out = append(out, c.replacement...)
+			case ActionWarn:
+				if opts.KeepWarnings {
+					out = utf8.AppendRune(out, r)
+				}
 			}
 		} else {
 			out = utf8.AppendRune(out, r)
@@ -117,7 +167,8 @@ func Clean(input []byte) (Result, error) {
 		prev = r
 		havePrev = true
 	}
-	resolveRun(0, false)
+	resolveJoinerRun(0, false)
+	resolveVSRun()
 
 	return Result{Cleaned: out, Findings: findings}, nil
 }

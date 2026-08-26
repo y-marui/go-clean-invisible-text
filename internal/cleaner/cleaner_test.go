@@ -5,13 +5,18 @@ import (
 	"testing"
 )
 
-func mustClean(t *testing.T, input string) Result {
+func mustCleanOpts(t *testing.T, input string, opts Options) Result {
 	t.Helper()
-	res, err := Clean([]byte(input))
+	res, err := Clean([]byte(input), opts)
 	if err != nil {
-		t.Fatalf("Clean(%q) returned error: %v", input, err)
+		t.Fatalf("Clean(%q, %+v) returned error: %v", input, opts, err)
 	}
 	return res
+}
+
+func mustClean(t *testing.T, input string) Result {
+	t.Helper()
+	return mustCleanOpts(t, input, Options{})
 }
 
 func TestClean_SingleRuneCategories(t *testing.T) {
@@ -77,8 +82,10 @@ func TestClean_Preserved(t *testing.T) {
 		{"cr", "a\rb"},
 		{"ordinary-space", "a b"},
 		{"ideographic-space", "a\u3000b"},
-		{"combining-acute", "e\u0301"},
-		{"variation-selector", "\u2764\uFE0F"},
+		{"combining-acute-Mn", "e\u0301"},
+		{"devanagari-visarga-Mc", "a\u0903b"},
+		{"combining-enclosing-circle-Me", "a\u20DDb"},
+		{"variation-selector-after-visible", "\u2764\uFE0F"},
 	}
 
 	for _, tc := range cases {
@@ -132,6 +139,106 @@ func TestClean_ZWJZWNJContext(t *testing.T) {
 	}
 }
 
+func TestClean_VariationSelectorContext(t *testing.T) {
+	cases := []struct {
+		name        string
+		input       string
+		wantCleaned string
+		wantRemoved int
+	}{
+		{"single-after-visible-preserved", "a\uFE0Fb", "a\uFE0Fb", 0},
+		{"single-at-start-removed", "\uFE0Fab", "ab", 1},
+		{"single-after-space-removed", "a \uFE0Fb", "a b", 1},
+		{"single-after-control-removed", "a\x00\uFE0Fb", "ab", 1},
+		{"single-at-end-preserved", "ab\uFE0F", "ab\uFE0F", 0},
+		{"run-of-two-removed", "a\uFE0F\uFE0Eb", "ab", 2},
+		{"supplementary-block-run-of-three-removed", "a\U000E0100\U000E0101\U000E0102b", "ab", 3},
+		{"supplementary-block-single-after-cjk-preserved", "\u4E00\U000E0100", "\u4E00\U000E0100", 0},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := mustClean(t, tc.input)
+			if string(res.Cleaned) != tc.wantCleaned {
+				t.Errorf("Cleaned = %q, want %q", res.Cleaned, tc.wantCleaned)
+			}
+			vsFindings := 0
+			for _, f := range res.Findings {
+				if f.Category == CategoryVariationSelector {
+					vsFindings++
+					if f.Action != ActionRemove {
+						t.Errorf("variation selector Finding Action = %q, want %q", f.Action, ActionRemove)
+					}
+				}
+			}
+			if vsFindings != tc.wantRemoved {
+				t.Errorf("variation-selector Findings = %d, want %d (all findings: %+v)", vsFindings, tc.wantRemoved, res.Findings)
+			}
+		})
+	}
+}
+
+func TestClean_Warn(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"figure-space-Zs", "a\u2007b", "ab"},
+		{"line-separator-Zl", "a\u2028b", "ab"},
+		{"paragraph-separator-Zp", "a\u2029b", "ab"},
+		{"private-use-Co", "a\uE000b", "ab"},
+		{"format-other-Cf", "a\u2064b", "ab"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := mustCleanOpts(t, tc.input, Options{})
+			if string(res.Cleaned) != tc.want {
+				t.Errorf("Cleaned = %q, want %q", res.Cleaned, tc.want)
+			}
+			if len(res.Findings) != 1 {
+				t.Fatalf("Findings = %v, want exactly 1", res.Findings)
+			}
+			f := res.Findings[0]
+			if f.Action != ActionWarn {
+				t.Errorf("Action = %q, want %q", f.Action, ActionWarn)
+			}
+			if f.Category != CategoryUnclassified {
+				t.Errorf("Category = %q, want %q", f.Category, CategoryUnclassified)
+			}
+		})
+	}
+}
+
+func TestClean_WarnKeepWarnings(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+	}{
+		{"figure-space-Zs", "a\u2007b"},
+		{"line-separator-Zl", "a\u2028b"},
+		{"paragraph-separator-Zp", "a\u2029b"},
+		{"private-use-Co", "a\uE000b"},
+		{"format-other-Cf", "a\u2064b"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := mustCleanOpts(t, tc.input, Options{KeepWarnings: true})
+			if string(res.Cleaned) != tc.input {
+				t.Errorf("Cleaned = %q, want unchanged %q", res.Cleaned, tc.input)
+			}
+			if len(res.Findings) != 1 {
+				t.Fatalf("Findings = %v, want exactly 1", res.Findings)
+			}
+			if res.Findings[0].Action != ActionWarn {
+				t.Errorf("Action = %q, want %q", res.Findings[0].Action, ActionWarn)
+			}
+		})
+	}
+}
+
 func TestClean_Idempotent(t *testing.T) {
 	inputs := []string{
 		"plain ascii text",
@@ -144,15 +251,14 @@ func TestClean_Idempotent(t *testing.T) {
 		"a\u200D\u200D\u200Db",
 		"a\x00\x01\x1f\x7f\u0080\u009fb",
 		"e\u0301\u2764\uFE0F\u3000",
+		"a\uFE0F\uFE0Eb",
+		"a\u2007b\u2028c\uE000d\u2064e",
 	}
 
 	for _, in := range inputs {
 		t.Run(in, func(t *testing.T) {
-			first, err := Clean([]byte(in))
-			if err != nil {
-				t.Fatalf("first Clean error: %v", err)
-			}
-			second, err := Clean(first.Cleaned)
+			first := mustClean(t, in)
+			second, err := Clean(first.Cleaned, Options{})
 			if err != nil {
 				t.Fatalf("second Clean error: %v", err)
 			}
@@ -166,8 +272,35 @@ func TestClean_Idempotent(t *testing.T) {
 	}
 }
 
+// TestClean_IdempotentKeepWarnings covers Options{KeepWarnings: true}: the
+// Warn-classified rune survives into Cleaned, so unlike the default-Options
+// idempotency test above, the *same* Warn Finding is expected to reappear on
+// the second pass. Idempotency here means the output bytes stabilize after
+// one pass, not that Warn findings disappear on re-scan.
+func TestClean_IdempotentKeepWarnings(t *testing.T) {
+	inputs := []string{
+		"a\u2007b\u2028c\uE000d\u2064e",
+	}
+
+	for _, in := range inputs {
+		t.Run(in, func(t *testing.T) {
+			first := mustCleanOpts(t, in, Options{KeepWarnings: true})
+			second, err := Clean(first.Cleaned, Options{KeepWarnings: true})
+			if err != nil {
+				t.Fatalf("second Clean error: %v", err)
+			}
+			if !bytes.Equal(first.Cleaned, second.Cleaned) {
+				t.Errorf("not idempotent: first=%q second=%q", first.Cleaned, second.Cleaned)
+			}
+			if len(second.Findings) != len(first.Findings) {
+				t.Errorf("second pass Findings = %+v, want same as first pass %+v", second.Findings, first.Findings)
+			}
+		})
+	}
+}
+
 func TestClean_InvalidUTF8(t *testing.T) {
-	_, err := Clean([]byte{0xff, 0xfe, 0x00})
+	_, err := Clean([]byte{0xff, 0xfe, 0x00}, Options{})
 	if err != ErrInvalidUTF8 {
 		t.Fatalf("err = %v, want ErrInvalidUTF8", err)
 	}
