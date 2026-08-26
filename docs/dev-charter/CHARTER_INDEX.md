@@ -23,7 +23,7 @@ dev-charter の各ドキュメントへのインデックス。
 | シークレット管理、git フック、pre-commit、セキュリティ設定 | `SECURITY_POLICY.md` |
 | アプリの対応言語、ローカライズ方針 | `LOCALIZATION_POLICY.md` |
 | 収益化、App Store、GitHub Sponsors、Buy Me a Coffee | `MONETIZATION_POLICY.md` |
-| チーム構成、git ワークフロー、Conventional Commits、ブランチ戦略 | `PROJECT_LIFECYCLE.md` |
+| チーム構成、git ワークフロー、Conventional Commits、ブランチ戦略、epic ブランチ、Draft PR、main の安定性 | `PROJECT_LIFECYCLE.md` |
 | UI デザイン、カラーパレット、ダークモード、アイコン（SF Symbols・Material Symbols） | `UI_GUIDELINES.md` |
 | dev-charter の初回導入手順 | `INSTALL_CHECKLIST.md` |
 | dev-charter の更新手順（subtree pull 後） | `UPDATE_CHECKLIST.md` |
