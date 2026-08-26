@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }}${{ matrix.goarm && format('v{0}', matrix.goarm) || '' }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # linux/amd64, darwin/arm64, and windows/amd64 run on the same
+          # runners as ci.yml's test job, so they get native `go test` too.
+          - { goos: linux, goarch: amd64, runner: ubuntu-latest, native: true }
+          - { goos: linux, goarch: arm64, runner: ubuntu-24.04-arm, native: true }
+          # No GOOS=linux GOARCH=arm hosted runner exists; cross-built here
+          # and smoke-tested under QEMU below instead of `go test`.
+          - { goos: linux, goarch: arm, goarm: "7", runner: ubuntu-latest, native: false }
+          - { goos: darwin, goarch: amd64, runner: macos-15-intel, native: true }
+          - { goos: darwin, goarch: arm64, runner: macos-latest, native: true }
+          - { goos: windows, goarch: amd64, runner: windows-latest, native: true }
+          - { goos: windows, goarch: arm64, runner: windows-11-arm, native: true }
+    runs-on: ${{ matrix.runner }}
+    env:
+      CGO_ENABLED: 0
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      GOARM: ${{ matrix.goarm }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Test (native)
+        if: matrix.native
+        run: go test ./...
+        shell: bash
+
+      - name: Build
+        shell: bash
+        run: |
+          mkdir -p dist
+          name="clean-invisible-text-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && format('v{0}', matrix.goarm) || '' }}"
+          [ "${{ matrix.goos }}" = windows ] && name="$name.exe"
+          go build -trimpath -o "dist/$name" ./cmd/clean-invisible-text
+
+      - name: Set up QEMU (arm/v7 smoke test)
+        if: matrix.goos == 'linux' && matrix.goarch == 'arm' && matrix.goarm == '7'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm
+
+      - name: Smoke test under QEMU (arm/v7)
+        if: matrix.goos == 'linux' && matrix.goarch == 'arm' && matrix.goarm == '7'
+        run: |
+          docker run --rm --platform linux/arm/v7 \
+            -v "$PWD/dist:/dist" -w /dist debian:bookworm-slim \
+            ./clean-invisible-text-linux-armv7 --help
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && format('v{0}', matrix.goarm) || '' }}
+          path: dist/*
+
+  publish:
+    name: Publish release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum clean-invisible-text-* > checksums.txt
+
+      # Only on an actual version tag: workflow_dispatch from a branch is
+      # for exercising the build matrix without publishing anything.
+      - name: Attest build provenance
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/clean-invisible-text-*"
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" dist/* \
+            --title "${{ github.ref_name }}" \
+            --generate-notes

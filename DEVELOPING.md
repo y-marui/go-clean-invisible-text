@@ -61,3 +61,13 @@ after touching either hook's behavior:
 ```bash
 go test ./test/precommit/...
 ```
+
+## Release Process
+
+`.github/workflows/release.yml` builds every architecture in
+[Issue #7](https://github.com/y-marui/go-clean-invisible-text/issues/7) on a
+`v*` tag push. See [docs/release-process.md](docs/release-process.md) for the
+target matrix, how to cut a release, and how to verify a downloaded binary's
+checksum and provenance attestation. `workflow_dispatch` runs the same build
+matrix without publishing anything — use it to validate the workflow after
+changing it.

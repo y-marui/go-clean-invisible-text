@@ -33,3 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`test/precommit/precommit_test.go`) and installation docs covering both
   the Go-source and pre-installed-binary paths
   (`docs/integrations/pre-commit.md`).
+- Cross-platform release automation (`.github/workflows/release.yml`):
+  builds darwin/windows/linux amd64+arm64 plus linux/armv7 with
+  `CGO_ENABLED=0`, publishes SHA-256 checksums and build provenance
+  attestations, and creates the GitHub Release on a `v*` tag push. See
+  [docs/release-process.md](docs/release-process.md).
