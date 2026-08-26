@@ -12,8 +12,10 @@
 A cross-platform Go CLI for detecting, explaining, and safely cleaning
 dangerous invisible Unicode characters in UTF-8 plain text.
 
-> **Status:** specification and roadmap. The CLI commands are not implemented
-> yet (the detection/cleaning engine is implemented in `internal/cleaner`).
+> **Status:** v0.1 in progress. `check`/`fix`/`explain`/`clean` are
+> implemented; pre-commit packaging and cross-platform release automation are
+> not yet (see the
+> [roadmap](https://github.com/y-marui/go-clean-invisible-text/issues/1)).
 
 ## Requirements
 
@@ -23,22 +25,38 @@ Building requires only Go — no Node.js, Python, or other runtime.
 ## Setup
 
 ```bash
+go install github.com/y-marui/go-clean-invisible-text/cmd/clean-invisible-text@latest
+```
+
+Or build from a clone:
+
+```bash
 git clone https://github.com/y-marui/go-clean-invisible-text.git
 cd go-clean-invisible-text
-go build ./...
+go build -o clean-invisible-text ./cmd/clean-invisible-text
 go test ./...
 ```
 
 ## Usage
 
-The CLI commands are not implemented yet. Planned commands:
+| Command | Description |
+|---|---|
+| `clean-invisible-text check FILE...` | Report findings without modifying input |
+| `clean-invisible-text fix FILE...` | Modify named files and report every change |
+| `clean-invisible-text explain FILE...` | Show code point, Unicode name, location, category, and planned action |
+| `clean-invisible-text clean` | Read standard input and write cleaned text to standard output |
 
-~~~console
-clean-invisible-text check FILE...
-clean-invisible-text fix FILE...
-clean-invisible-text explain FILE...
-clean-invisible-text clean
-~~~
+```console
+$ clean-invisible-text check notes.txt
+notes.txt: 2 finding(s)
+
+$ echo "hello world" | clean-invisible-text clean
+hello world
+```
+
+Add `--json` to `check`/`fix`/`explain` for machine-readable output, and
+`--keep-warnings` to `fix`/`clean` to preserve Warn-classified code points
+instead of removing them. Full contract: [docs/cli.md](docs/cli.md).
 
 The normative behavior is defined in
 [docs/specification.md](docs/specification.md) and

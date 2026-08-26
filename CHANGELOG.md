@@ -13,3 +13,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   JOINER/SOFT HYPHEN, the Trojan Source bidirectional control set, Unicode tag
   characters, noncharacters, and unsafe control characters, plus contextual
   ZWJ/ZWNJ preservation.
+- Safe UTF-8 file mutation (`internal/mutate`): rewrites a file in place via a
+  same-directory temp file, fsync, and atomic rename; rejects symlinks and
+  binary-looking content by default; skips the write when content is
+  unchanged.
+- Allow/Block/Warn model for invisible characters: an explicit whitelist
+  (combining marks, ordinary/ideographic space, a single contextual ZWJ/ZWNJ
+  or variation selector), the existing blacklist unchanged, and a new Warn
+  outcome for anything else in Unicode category Cf/Co/Zs/Zl/Zp. Variation
+  selectors get a dedicated contextual rule (a run of 2+, or one with no
+  valid preceding base character, is blocked) since they're a documented
+  ASCII-smuggling/steganography vector.
+- CLI (`cmd/clean-invisible-text`): `check`, `fix`, `explain`, and `clean`
+  commands, `--json` machine-readable output, `--keep-warnings`, and stable
+  exit statuses per `docs/specification.md`.

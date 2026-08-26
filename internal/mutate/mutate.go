@@ -50,6 +50,16 @@ type Result struct {
 	Changed bool
 	// Findings is what cleaner.Clean found, whether or not the file was changed.
 	Findings []cleaner.Finding
+	// Original is the file's content as read, before cleaning.
+	Original []byte
+}
+
+// IsBinary reports whether data looks binary rather than text, by the
+// presence of a NUL byte. NUL is valid UTF-8 and would otherwise be silently
+// classified as an unsafe control character by cleaner.Clean, so this check
+// must run before Clean sees the data.
+func IsBinary(data []byte) bool {
+	return bytes.IndexByte(data, 0) != -1
 }
 
 // File cleans the UTF-8 text file at path in place, per the character policy
@@ -81,7 +91,7 @@ func File(path string, opts Options) (Result, error) {
 		return Result{}, fmt.Errorf("mutate: %s: %w", path, err)
 	}
 
-	if bytes.IndexByte(data, 0) != -1 {
+	if IsBinary(data) {
 		return Result{}, fmt.Errorf("%w: %s", ErrBinary, path)
 	}
 
@@ -91,14 +101,14 @@ func File(path string, opts Options) (Result, error) {
 	}
 
 	if bytes.Equal(cleaned.Cleaned, data) {
-		return Result{Changed: false, Findings: cleaned.Findings}, nil
+		return Result{Changed: false, Findings: cleaned.Findings, Original: data}, nil
 	}
 
 	if err := replace(realPath, info.Mode().Perm(), cleaned.Cleaned); err != nil {
 		return Result{}, fmt.Errorf("mutate: %s: %w", path, err)
 	}
 
-	return Result{Changed: true, Findings: cleaned.Findings}, nil
+	return Result{Changed: true, Findings: cleaned.Findings, Original: data}, nil
 }
 
 // replace writes data to path via a same-directory temp file, chmod'd to
