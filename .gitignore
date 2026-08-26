@@ -1,0 +1,7 @@
+# Go
+/bin/
+*.test
+*.out
+
+# OS
+.DS_Store
