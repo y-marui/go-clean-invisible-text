@@ -12,12 +12,14 @@ Allowed or Blocked is Warned on.
 Code-point classification (general categories such as Mn, Mc, Me, Cf, Co,
 Zs, Zl, Zp) relies entirely on Go's standard library `unicode` package rather
 than a vendored table, so the effective Unicode Character Database version is
-whatever `unicode.Version` reports for the Go toolchain pinned in `go.mod`.
-At `go 1.27.0` that is Unicode **17.0.0**. Bumping the pinned Go version may
-change this value; no separate update to this document is needed unless a
-category assignment used by this policy actually changes between versions.
-When one does, that's a behavior change, not a documentation update — see
-the versioning consequences in
+whatever `unicode.Version` reports for the toolchain that built the binary.
+Official release binaries use the exact patch-qualified Go version selected by
+the release workflow; at `go 1.27.0` that is Unicode **17.0.0**. Source builds,
+including `go install ...@latest`, may use a newer compatible toolchain and
+therefore a newer Unicode table. No separate update to this document is needed
+unless a category assignment used by this policy actually changes between
+release toolchains. When one does, that's a behavior change, not a
+documentation update — see the versioning consequences in
 [ADR 0002](decisions/0002-v1-compatibility-and-support-policy.md#unicode-table-update-policy).
 
 ## Allow

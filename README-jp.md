@@ -17,7 +17,7 @@ UTF-8 プレーンテキスト中の危険な不可視 Unicode 文字を検出�
 
 ## Requirements
 
-Windows・macOS・Raspberry Pi でスタンドアロンバイナリとして動作することを目標にしている。ビルドには Go のみが必要で、Node.js や Python 等の追加ランタイムは不要。最小 OS バージョンと対応する Raspberry Pi アーキテクチャは、固定された Go ツールチェーンとリリース対象アーキテクチャに追従する。詳細は [ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md) を参照。
+Windows・macOS・Raspberry Pi でスタンドアロンバイナリとして動作することを目標にしている。ビルドには Go のみが必要で、Node.js や Python 等の追加ランタイムは不要。公式リリースバイナリの最小 OS バージョンと対応する Raspberry Pi アーキテクチャは [ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md) で定義する。ソースからビルドしたバイナリは、実際に使用した Go ツールチェーンの要件に従う。
 
 ## Setup
 

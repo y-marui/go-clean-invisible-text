@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed on 2026-08-27 (see [Issue #8](https://github.com/y-marui/go-clean-invisible-text/issues/8)).
+Accepted on 2026-08-27 (see [Issue #8](https://github.com/y-marui/go-clean-invisible-text/issues/8)).
 
 ## Context
 
@@ -22,16 +22,23 @@ explicitly rather than leaving it implicit.
 
 ### Minimum OS versions
 
-Track whatever OS floor the Go toolchain pinned in `go.mod` requires, rather
-than a hardcoded number that silently goes stale. Bumping the pinned Go
-version is the only way this floor moves, and is called out in
-`CHANGELOG.md` like any other change. See the
+Official release binaries track the OS floor required by the exact Go version
+used by the release workflow, rather than a hardcoded number that silently
+goes stale. The workflow reads the patch-qualified `go` directive from
+`go.mod`; `actions/setup-go` resolves that value exactly. Changing the release
+toolchain or its build configuration must be called out in `CHANGELOG.md` when
+it changes the floor. See the
 [Go Wiki's MinimumRequirements page](https://go.dev/wiki/MinimumRequirements)
-for current values; as of `go 1.27.0` (this repo's pinned version):
+for current values; for release binaries built with `go 1.27.0`:
 
 - Windows 10 / Windows Server 2016 or later
 - macOS 13 (Ventura) or later
 - Linux kernel 3.2 or later
+
+The `go` directive is a minimum version for source builds, not a general
+toolchain pin. A developer or `go install ...@latest` may use a newer
+compatible toolchain, so a source-built binary follows that toolchain's OS
+requirements and is not covered by the official-binary floor above.
 
 ### Supported Raspberry Pi architectures
 
@@ -50,15 +57,20 @@ silent inference from this ADR.
 ### Unicode table update policy
 
 Formalizes what `docs/character-policy.md`'s "Unicode version" section
-already implies: classification tracks `unicode.Version` for the Go
-toolchain pinned in `go.mod`, not a vendored table. A Go version bump that
-changes the Cf/Co/Zs/Zl/Zp category (or any other category this policy
-relies on — Mn/Mc/Me for the Allow list) of a code point this policy already
-classifies is a **behavior change** — it can change `fix`/`clean` output —
-and requires at least a **minor** version bump plus a `CHANGELOG.md` entry.
-It is never silently absorbed into a patch release. A Go bump that changes
-no relevant category assignment needs no character-policy update at all,
-per the existing text.
+already implies: classification tracks `unicode.Version` for the toolchain
+that built the binary, not a vendored table. Official release binaries use
+the exact patch-qualified Go version selected by the release workflow;
+source builds, including `go install ...@latest`, use the toolchain actually
+selected by the invoking `go` command and may therefore use a newer Unicode
+table.
+
+A release-toolchain bump that changes the Cf/Co/Zs/Zl/Zp category (or any
+other category this policy relies on — Mn/Mc/Me for the Allow list) of a code
+point this policy already classifies is a **behavior change** — it can change
+`fix`/`clean` output — and requires at least a **minor** version bump plus a
+`CHANGELOG.md` entry. It is never silently absorbed into a patch release. A
+Go bump that changes no relevant category assignment needs no
+character-policy update at all, per the existing text.
 
 ### CLI/JSON compatibility policy
 
@@ -106,7 +118,9 @@ silently into "Added".
   `SECURITY.md` each gain a short pointer to the relevant part of this
   decision rather than restating it, so there is one place to update when
   the policy itself changes.
-- Future Go-version bumps must check the Unicode category and OS-floor
-  consequences described above before merging, not just run the test suite.
+- The release workflow must continue selecting an exact patch-qualified Go
+  version. Future release-toolchain bumps must check the Unicode category and
+  OS-floor consequences described above before merging, not just run the test
+  suite.
 - A CLI/JSON breaking change now has a concrete bar (major version bump,
   explicit CHANGELOG callout) instead of being a case-by-case judgment call.
