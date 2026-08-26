@@ -50,15 +50,20 @@ jobs:
 
       - name: Set up QEMU (arm/v7 smoke test)
         if: matrix.goos == 'linux' && matrix.goarch == 'arm' && matrix.goarm == '7'
-        uses: docker/setup-qemu-action@v3
+        # QEMU runs privileged while registering binfmt handlers, so pin both
+        # the action and its installer image to immutable revisions.
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
         with:
+          image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
           platforms: arm
 
       - name: Smoke test under QEMU (arm/v7)
         if: matrix.goos == 'linux' && matrix.goarch == 'arm' && matrix.goarm == '7'
         run: |
-          docker run --rm --platform linux/arm/v7 \
-            -v "$PWD/dist:/dist" -w /dist debian:bookworm-slim \
+          docker run --rm --platform linux/arm/v7 --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges \
+            -v "$PWD/dist:/dist:ro" -w /dist \
+            debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 \
             ./clean-invisible-text-linux-armv7 --help
 
       - uses: actions/upload-artifact@v4

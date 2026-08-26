@@ -32,6 +32,13 @@ anything (the provenance and release-creation steps only run on an actual
 `refs/tags/*` push) — use it to validate the matrix after changing the
 workflow, before ever pushing a version tag.
 
+The QEMU action and both container images used by the `linux/armv7` smoke test
+are pinned to immutable commits or image digests. When updating them, update
+the adjacent human-readable version tag and immutable revision together, then
+run `workflow_dispatch` before cutting a release. The smoke-test container has
+no network access and receives the built binary through a read-only mount so it
+cannot alter the artifact that is subsequently checksummed and attested.
+
 ## Verifying a downloaded binary
 
 ```bash
