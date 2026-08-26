@@ -11,8 +11,8 @@
 
 UTF-8 プレーンテキスト中の危険な不可視 Unicode 文字を検出・説明し、安全にクリーニングするクロスプラットフォーム対応の Go CLI。
 
-> **Status:** v0.1 進行中。`check`/`fix`/`explain`/`clean` は実装済み。pre-commit
-> パッケージングとクロスプラットフォームリリース自動化は未着手
+> **Status:** v0.1 進行中。`check`/`fix`/`explain`/`clean` と pre-commit
+> パッケージングは実装済み。クロスプラットフォームリリース自動化は未着手
 > ([ロードマップ](https://github.com/y-marui/go-clean-invisible-text/issues/1) 参照)。
 
 ## Requirements
@@ -64,7 +64,21 @@ hello world
 - [docs/security-model.md](docs/security-model.md) — セキュリティモデル
 - [docs/cli.md](docs/cli.md) — CLI 契約
 - [docs/architecture.md](docs/architecture.md) — アーキテクチャ
+- [docs/integrations/pre-commit.md](docs/integrations/pre-commit.md) — pre-commit フック契約
 - [docs/decisions/](docs/decisions/) — アーキテクチャ決定記録(ADR)
+
+## pre-commit Integration
+
+```yaml
+repos:
+  - repo: https://github.com/y-marui/go-clean-invisible-text
+    rev: vX.Y.Z # リリース済みタグを指定
+    hooks:
+      - id: clean-invisible-text-check
+      - id: clean-invisible-text-fix
+```
+
+インストール済みバイナリを使う方法を含む契約の全体は [docs/integrations/pre-commit.md](docs/integrations/pre-commit.md) を参照。
 
 ## Alfred Integration
 

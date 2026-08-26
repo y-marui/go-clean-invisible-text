@@ -1,0 +1,13 @@
+- id: clean-invisible-text-check
+  name: clean-invisible-text check
+  description: Detect dangerous invisible Unicode characters without modifying files.
+  language: golang
+  entry: clean-invisible-text check
+  types: [text]
+
+- id: clean-invisible-text-fix
+  name: clean-invisible-text fix
+  description: Remove dangerous invisible Unicode characters; fails so the change is reviewed before commit.
+  language: golang
+  entry: clean-invisible-text fix
+  types: [text]

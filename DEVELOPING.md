@@ -47,3 +47,17 @@ See [docs/architecture.md](docs/architecture.md) for directory structure and
 reported issue as a table-driven test case first (see
 [.github/ISSUE_TEMPLATE/bug.yml](.github/ISSUE_TEMPLATE/bug.yml) for the report
 format), then fix.
+
+## pre-commit Hooks
+
+`.pre-commit-hooks.yaml` defines the `clean-invisible-text-check` and
+`clean-invisible-text-fix` hooks this repository ships to consumers — see
+[docs/integrations/pre-commit.md](docs/integrations/pre-commit.md) for the
+contract and both installation options. `test/precommit/precommit_test.go` is
+an end-to-end fixture for that contract; it skips itself when `pre-commit` is
+not on `PATH`, so `make test` stays runnable without it, but run it directly
+after touching either hook's behavior:
+
+```bash
+go test ./test/precommit/...
+```
