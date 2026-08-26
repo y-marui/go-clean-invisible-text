@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,8 +122,12 @@ func TestRunCheck_JSON(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Errorf("stderr = %q, want empty in --json mode", stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "\"path\"") || !strings.Contains(stdout.String(), path) {
-		t.Errorf("stdout = %q, want JSON containing the path", stdout.String())
+	var reports []fileReport
+	if err := json.Unmarshal(stdout.Bytes(), &reports); err != nil {
+		t.Fatalf("json.Unmarshal: %v (stdout = %q)", err, stdout.String())
+	}
+	if len(reports) != 1 || reports[0].Path != path {
+		t.Errorf("reports = %+v, want a single report with path %q", reports, path)
 	}
 }
 

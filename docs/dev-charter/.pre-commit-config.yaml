@@ -308,4 +308,10 @@ repos:
           pwsh -NoProfile -NonInteractive -File scripts/check-powershell-lint.ps1 "$@"
           ' --
         files: '\.ps1$'
+        # Adopting projects install this subtree read-only (see
+        # check-charter-subtree-edit.sh); its own scripts/*.ps1 aren't
+        # something the adopter can fix, so skip them by default. Assumes
+        # the default CHARTER_PREFIX (docs/dev-charter) — adjust this
+        # pattern if installed elsewhere.
+        exclude: '^docs/dev-charter/'
         require_serial: true

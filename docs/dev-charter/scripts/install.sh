@@ -25,7 +25,21 @@ fi
 
 # 2. Skip if already installed
 if [ -d "$PREFIX" ]; then
-    echo "dev-charter is already installed at $PREFIX."
+    # Detect the already-installed variant from CHARTER_INDEX.md instead of
+    # trusting CHARTER_BRANCH (defaults to "main"), so re-running this script
+    # against an existing lite install without re-passing CHARTER_BRANCH=lite
+    # doesn't print instructions that would silently switch it to full.
+    INSTALLED_BRANCH="main"
+    if [ -f "$PREFIX/CHARTER_INDEX.md" ] && grep -q '(lite)' "$PREFIX/CHARTER_INDEX.md"; then
+        INSTALLED_BRANCH="lite"
+    fi
+    if [ -n "${CHARTER_BRANCH:-}" ] && [ "$CHARTER_BRANCH" != "$INSTALLED_BRANCH" ]; then
+        echo "Warning: $PREFIX looks like the '$INSTALLED_BRANCH' variant, but CHARTER_BRANCH=$CHARTER_BRANCH was given." >&2
+        echo "  Using '$INSTALLED_BRANCH' (the installed variant) to avoid an accidental full/lite switch." >&2
+    fi
+    BRANCH="$INSTALLED_BRANCH"
+
+    echo "dev-charter is already installed at $PREFIX ($BRANCH)."
     echo "To update, run:"
     printf "  git remote | grep -q '%s' || git remote add '%s' '%s'\n" \
         "$REMOTE_NAME" "$REMOTE_NAME" "$REMOTE_URL"
