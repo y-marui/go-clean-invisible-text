@@ -81,3 +81,12 @@ binary-looking file, a rejected symlink, or an I/O error) when that file
 could not be processed — `findings` is then empty and `changed` is `false`.
 Nothing else is written to standard error in `--json` mode: the array is the
 entire machine-readable contract, intended for CI and the Alfred integration.
+
+## Compatibility
+
+Subcommand names, flag names/semantics, exit statuses, and every JSON field
+above are stable within a major version; new JSON fields may be added in a
+minor version (additive only — consumers must ignore unknown fields).
+Human-readable diagnostic text (non-`--json` output) is not covered and may
+change in any release. Full policy, including the pre-1.0 caveat:
+[ADR 0002](decisions/0002-v1-compatibility-and-support-policy.md#clijson-compatibility-policy).
