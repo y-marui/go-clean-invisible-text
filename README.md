@@ -20,7 +20,12 @@ dangerous invisible Unicode characters in UTF-8 plain text.
 ## Requirements
 
 Aims to run as a standalone binary on Windows, macOS, and Raspberry Pi.
-Building requires only Go — no Node.js, Python, or other runtime.
+Building requires only Go — no Node.js, Python, or other runtime. Minimum OS
+versions for official release binaries and supported Raspberry Pi
+architectures are defined in
+[ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md).
+Source-built binaries follow the requirements of the Go toolchain that builds
+them.
 
 ## Setup
 

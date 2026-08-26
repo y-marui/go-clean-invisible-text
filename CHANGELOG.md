@@ -38,3 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `CGO_ENABLED=0`, publishes SHA-256 checksums and build provenance
   attestations, and creates the GitHub Release on a `v*` tag push. See
   [docs/release-process.md](docs/release-process.md).
+- v1.0 compatibility and support policy
+  ([ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md)):
+  minimum OS versions tied to the exact official-release toolchain, supported
+  Raspberry Pi architectures, the Unicode table update policy's versioning
+  consequences, a CLI/JSON compatibility contract, and the security
+  response/release policy.

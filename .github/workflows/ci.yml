@@ -23,15 +23,7 @@ jobs:
         env:
           # powershell-lint is a local-only convenience check (see
           # .pre-commit-config.yaml); it isn't required to gate merges.
-          #
-          # check-charter-ci-template is temporarily skipped: this repo's
-          # .github/workflows/dev-charter-check.yml intentionally deviates
-          # from the upstream dev-charter template (adds a "Dev Charter
-          # Gate" job so dependabot-authored PRs stop being permanently
-          # blocked — see PR #15). Remove this skip once the fix lands
-          # upstream in y-marui/dev-charter and is pulled back in via
-          # `git subtree pull`.
-          SKIP: powershell-lint,check-charter-ci-template
+          SKIP: powershell-lint
 
   lint:
     name: Lint
