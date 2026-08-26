@@ -18,7 +18,7 @@ jobs:
       actions: read
 
   gate:
-    name: Dev Charter Gate
+    name: Dev Charter / Required Checks
     needs: [check]
     if: always()
     runs-on: ubuntu-latest
