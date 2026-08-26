@@ -16,6 +16,9 @@ whatever `unicode.Version` reports for the Go toolchain pinned in `go.mod`.
 At `go 1.27.0` that is Unicode **17.0.0**. Bumping the pinned Go version may
 change this value; no separate update to this document is needed unless a
 category assignment used by this policy actually changes between versions.
+When one does, that's a behavior change, not a documentation update — see
+the versioning consequences in
+[ADR 0002](decisions/0002-v1-compatibility-and-support-policy.md#unicode-table-update-policy).
 
 ## Allow
 
