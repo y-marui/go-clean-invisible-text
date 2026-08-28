@@ -46,6 +46,46 @@ done <<< "$include_files"
   echo "普遍的に価値がある部分だけを収録している。full 版の全体像は"
   echo "https://github.com/y-marui/dev-charter を参照。"
   echo
+  echo "## Install"
+  echo
+  echo "まだ導入していない場合、プロジェクトのルートで以下のいずれかを実行する："
+  echo
+  echo '```bash'
+  echo "# Quick Install"
+  echo "CHARTER_BRANCH=lite bash <(curl -fsSL https://raw.githubusercontent.com/y-marui/dev-charter/main/scripts/install.sh)"
+  echo '```'
+  echo
+  echo '```'
+  echo "# git subtree で直接導入する場合"
+  echo "git remote add dev-charter https://github.com/y-marui/dev-charter"
+  echo "git fetch dev-charter"
+  echo "git subtree add --prefix=docs/dev-charter dev-charter lite --squash"
+  echo '```'
+  echo
+  echo "導入後、以下のプロンプトを AI ツールに貼り付ける："
+  echo
+  echo '```'
+  echo "docs/dev-charter/CHARTER_INDEX.md を読み、AI_CONTEXT.md と AI ツール設定ファイルを生成して"
+  echo '```'
+  echo
+  echo "## Updating"
+  echo
+  echo "\`docs/dev-charter/\` は git subtree で導入されている。更新するには："
+  echo
+  echo '```'
+  echo "git remote add dev-charter https://github.com/y-marui/dev-charter  # 未追加の場合のみ"
+  echo "git subtree pull --prefix=docs/dev-charter dev-charter lite --squash"
+  echo '```'
+  echo
+  echo "\`main\`/\`lite\` の取り違えを防ぐには、このファイルの \`(lite)\` マーカーで"
+  echo "導入済みブランチを自動判定する Makefile ヘルパーを使う（full 版 README の"
+  echo "\"Makefile helper\" セクション参照）。"
+  echo
+  echo "更新後は \`git diff HEAD~1 HEAD --name-only -- docs/dev-charter/\` で"
+  echo "変更ファイルを確認し、プロジェクトへの影響を反映する（lite にはローカルの"
+  echo "UPDATE_CHECKLIST.md がないため、必要なら full 版を参照："
+  echo "https://github.com/y-marui/dev-charter/blob/main/UPDATE_CHECKLIST.md ）。"
+  echo
   echo "## Index"
   echo
   echo "| トピック / キーワード | ファイル |"

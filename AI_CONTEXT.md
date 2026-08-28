@@ -56,6 +56,36 @@ such as `AI_CONTEXT.md` and `README.md`.
   the source of truth.
 - Roadmap and task tracking live in GitHub Issues/Milestones under this repository
   (Issue #1 is the roadmap), not in Markdown files in this repo.
+- `main` is kept in a state where a user could install and actually use the tool —
+  not just internal scaffolding, docs, or an engine with no entry point. Do not open
+  a PR to `main` until there is a working CLI (tracked by Issue #2:
+  `check`/`fix`/`explain`/`clean` commands) that a user could realistically install
+  and run (e.g. `go install .../cmd/clean-invisible-text@latest` producing a working
+  binary). Until then, multiple feature/chore branches accumulating unmerged is
+  normal, not a problem to fix. Work always happens on a branch first — never commit
+  directly on `main`, even once a local merge+push (instead of a GitHub PR) is
+  acceptable for the eventual integration.
+
+### CI: `dev-charter-check.yml` deviates from the upstream template
+
+`.github/workflows/dev-charter-check.yml` intentionally adds an extra `gate` job
+(`name: Dev Charter / Required Checks`) not present in the plain dev-charter
+template, and `ci.yml`'s pre-commit step has `check-charter-ci-template` added to
+its `SKIP` list. This is temporary until
+[y-marui/dev-charter#81](https://github.com/y-marui/dev-charter/issues/81) is
+resolved upstream — the template's `check` job calls a reusable workflow that
+GitHub never reports a status for when the calling job is skipped (as it is for
+every `dependabot[bot]` PR), which left Dependabot PRs permanently blocked by
+this repo's `main-protection` Ruleset. The `gate` job is a plain job so its name
+is always reported; the Ruleset now requires `Dev Charter / Required Checks`
+instead of `Check / check`. Once dev-charter#81 lands upstream and is pulled in
+via `git subtree pull`, remove both the `SKIP` entry and this local `gate` job.
+
+Separately: this repo's `main-protection` Ruleset has `bypass_actors: []` — nobody
+gets an implicit merge bypass. And merging a PR that touches
+`.github/workflows/*.yml` via an OAuth App/API token lacking the `workflow` scope
+can 403; if that happens, merge directly from the GitHub web UI instead of
+retrying via `gh`/MCP.
 
 ## AI Tool Assignments
 
