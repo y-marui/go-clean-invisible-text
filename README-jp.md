@@ -130,6 +130,12 @@ Version Check (CI) を使う場合は `branch: lite` を指定する：
 lite の `VERSION` は full とは独立して管理され、収録ファイルの内容が実際に
 変わったときだけ更新される（無関係な full 側の変更で更新PRが飛ばないようにするため）。
 
+lite のみを導入した場合、この README・`INSTALL_CHECKLIST.md`・
+`UPDATE_CHECKLIST.md` は含まれない。そのため `scripts/publish-lite-branch.sh`
+が生成する lite 版 `CHARTER_INDEX.md` には、`git subtree pull` コマンドと
+下記 Makefile Helper への案内を含む独自の "Updating" セクションを収録し、
+full を導入していない採用先でも自己完結した更新手順を参照できるようにしている。
+
 ## Makefile Helper
 
 `git subtree pull` は作業ツリーに未コミットの変更があると失敗するため、

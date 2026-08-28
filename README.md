@@ -132,6 +132,12 @@ lite's `VERSION` is tracked independently from full's, and only updates when
 the included files' content actually changes (so unrelated full-side changes
 don't trigger update PRs for lite adopters).
 
+A lite-only checkout doesn't include this README, `INSTALL_CHECKLIST.md`, or
+`UPDATE_CHECKLIST.md`, so `scripts/publish-lite-branch.sh` generates lite's
+`CHARTER_INDEX.md` with its own "Updating" section covering the `git subtree
+pull` command and a pointer to the Makefile helper below — self-contained
+maintenance instructions for adopters who never installed full.
+
 ## Makefile helper
 
 `git subtree pull` fails if the working tree has uncommitted changes, so this
