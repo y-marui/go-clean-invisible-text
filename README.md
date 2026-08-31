@@ -12,10 +12,12 @@
 A cross-platform Go CLI for detecting, explaining, and safely cleaning
 dangerous invisible Unicode characters in UTF-8 plain text.
 
-> **Status:** v1.0.0 released. `check`/`fix`/`explain`/`clean`, pre-commit
-> packaging, cross-platform release automation, and the v1.0 compatibility
-> and support policy ([ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md))
-> are all shipped (see the
+> **Status:** v1.1.0 released. `check`/`fix`/`explain`/`clean`, pre-commit
+> packaging, cross-platform release automation, the v1.0 compatibility and
+> support policy ([ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md)),
+> and the per-code-point/file allow-list
+> ([ADR 0003](docs/decisions/0003-per-codepoint-allow-list.md)) are all
+> shipped (see the
 > [roadmap](https://github.com/y-marui/go-clean-invisible-text/issues/1)).
 
 ## Requirements
