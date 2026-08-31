@@ -31,7 +31,9 @@ Unless a code point is explicitly covered by the character policy:
 
 ## Exit status
 
-- `0`: no finding, or successful standard-stream cleaning.
+- `0`: no finding, or successful standard-stream cleaning. For `check`/
+  `explain`, a file whose only findings are allow-listed exceptions (see
+  [docs/cli.md](cli.md#allow-list-flags)) also exits `0`.
 - `1`: findings were detected; for `fix`, changes were applied and must be reviewed.
 - `2`: invalid arguments, input, encoding, or I/O failure.
 

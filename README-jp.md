@@ -53,8 +53,9 @@ hello world
 ```
 
 `check`/`fix`/`explain` に `--json` を付けると機械可読な出力になり、`fix`/`clean`
-に `--keep-warnings` を付けると Warn 判定のコードポイントを除去せず残せる。契約の全体は
-[docs/cli.md](docs/cli.md) を参照。
+に `--keep-warnings` を付けると Warn 判定のコードポイントを除去せず残せる。どのコマンドにも
+`--allow`/`--allow-file` を付けると、特定の Warn 判定コードポイントに対して監査可能な例外を
+付与できる。契約の全体は [docs/cli.md](docs/cli.md) を参照。
 
 正規の仕様は [docs/specification.md](docs/specification.md) と [docs/character-policy.md](docs/character-policy.md) を参照。作業中の議論は仕様ファイルではなく GitHub Issues で管理する。
 

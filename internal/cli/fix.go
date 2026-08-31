@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/y-marui/go-clean-invisible-text/internal/allowlist"
 	"github.com/y-marui/go-clean-invisible-text/internal/mutate"
 )
 
@@ -15,6 +16,8 @@ func runFix(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	jsonOut := fs.Bool("json", false, "emit a machine-readable JSON report to stdout")
 	keepWarnings := fs.Bool("keep-warnings", false, "preserve Warn-classified code points instead of removing them")
+	var af allowFlags
+	registerAllowFlags(fs, &af)
 	if err := fs.Parse(args); err != nil {
 		return exitError
 	}
@@ -23,11 +26,15 @@ func runFix(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "fix: at least one file is required")
 		return exitError
 	}
+	rules, ok := loadRules(af, stderr)
+	if !ok {
+		return exitError
+	}
 
 	exit := exitOK
 	reports := make([]fileReport, 0, len(files))
 	for _, path := range files {
-		res, err := mutate.File(path, mutate.Options{KeepWarnings: *keepWarnings})
+		res, err := mutate.File(path, mutate.Options{KeepWarnings: *keepWarnings, AllowRules: allowlist.Resolve(rules, path)})
 		if err != nil {
 			r := errorReport(path, err)
 			reports = append(reports, r)

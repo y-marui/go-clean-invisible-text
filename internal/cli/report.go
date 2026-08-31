@@ -39,6 +39,7 @@ type findingJSON struct {
 	Category    cleaner.Category   `json:"category"`
 	Action      cleaner.ActionKind `json:"action"`
 	Replacement string             `json:"replacement"`
+	Reason      string             `json:"reason,omitempty"`
 }
 
 // fileReport is the JSON representation of one file's outcome, per the
@@ -82,6 +83,7 @@ func buildReport(path string, data []byte, findings []cleaner.Finding, changed b
 			Category:    f.Category,
 			Action:      f.Action,
 			Replacement: f.Replacement,
+			Reason:      f.Reason,
 		})
 	}
 	return fileReport{Path: path, Findings: fjs, Changed: changed}
@@ -123,20 +125,37 @@ func renderDetailed(w io.Writer, r fileReport) {
 	}
 	for _, f := range r.Findings {
 		action := string(f.Action)
-		if f.Action == cleaner.ActionReplace {
+		switch f.Action {
+		case cleaner.ActionReplace:
 			action = fmt.Sprintf("replace with %q", f.Replacement)
+		case cleaner.ActionAllow:
+			action = fmt.Sprintf("allow (%s)", f.Reason)
 		}
 		fmt.Fprintf(w, "%s:%d:%d: %s %s [%s] -> %s\n",
 			r.Path, f.Line, f.Column, f.Rune, f.Name, f.Category, action)
 	}
 }
 
+// actionableFindings reports whether findings contains anything other than
+// an ActionAllow exception. check/explain must not fail a file over a
+// finding an allow-list rule already covered — surfacing it in output while
+// letting it pass is the entire purpose of the allow-list (Issue #26).
+func actionableFindings(findings []cleaner.Finding) bool {
+	for _, f := range findings {
+		if f.Action != cleaner.ActionAllow {
+			return true
+		}
+	}
+	return false
+}
+
 // analyzeFile reads path and runs it through cleaner.Clean without writing
 // anything back, for the read-only check and explain commands. It applies
 // the same binary-content rejection as mutate.File, but skips the
 // symlink-mutation guard entirely: a read-only command has nothing to
-// protect by refusing to follow a symlink.
-func analyzeFile(path string) ([]byte, cleaner.Result, error) {
+// protect by refusing to follow a symlink. allowRules is the file's already
+// path-resolved allow-list (see allowlist.Resolve).
+func analyzeFile(path string, allowRules map[rune]cleaner.AllowRule) ([]byte, cleaner.Result, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, cleaner.Result{}, err
@@ -144,7 +163,7 @@ func analyzeFile(path string) ([]byte, cleaner.Result, error) {
 	if mutate.IsBinary(data) {
 		return nil, cleaner.Result{}, fmt.Errorf("%w: %s", mutate.ErrBinary, path)
 	}
-	result, err := cleaner.Clean(data, cleaner.Options{})
+	result, err := cleaner.Clean(data, cleaner.Options{AllowRules: allowRules})
 	if err != nil {
 		return nil, cleaner.Result{}, fmt.Errorf("%s: %w", path, err)
 	}

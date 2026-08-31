@@ -15,7 +15,13 @@
 - no silent normalization;
 - idempotent cleaning;
 - no unrelated file changes;
-- review required after automatic file modification.
+- review required after automatic file modification;
+- an allow-list exception (`--allow`/`--allow-file`,
+  [docs/cli.md](cli.md#allow-list-flags)) can only ever affect a
+  Warn-classified code point, never a Block-classified one — so even a
+  project-committed allow-list file can at most relabel one already-flagged
+  Warn occurrence, with its reason kept visible in output, and can never
+  suppress a bidi-control, tag-character, or other Block-classified finding.
 
 ## Out of scope
 

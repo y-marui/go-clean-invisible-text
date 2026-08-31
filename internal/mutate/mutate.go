@@ -42,6 +42,8 @@ type Options struct {
 	AllowSymlink bool
 	// KeepWarnings is forwarded to cleaner.Options.KeepWarnings.
 	KeepWarnings bool
+	// AllowRules is forwarded to cleaner.Options.AllowRules.
+	AllowRules map[rune]cleaner.AllowRule
 }
 
 // Result is the outcome of File.
@@ -95,7 +97,7 @@ func File(path string, opts Options) (Result, error) {
 		return Result{}, fmt.Errorf("%w: %s", ErrBinary, path)
 	}
 
-	cleaned, err := cleaner.Clean(data, cleaner.Options{KeepWarnings: opts.KeepWarnings})
+	cleaned, err := cleaner.Clean(data, cleaner.Options{KeepWarnings: opts.KeepWarnings, AllowRules: opts.AllowRules})
 	if err != nil {
 		return Result{}, fmt.Errorf("mutate: %s: %w", path, err)
 	}

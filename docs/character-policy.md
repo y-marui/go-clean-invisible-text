@@ -104,6 +104,38 @@ This resolves [Issue #9](https://github.com/y-marui/go-clean-invisible-text/issu
 space or format character individually in advance, anything beyond the
 Allow list now surfaces as a warning automatically.
 
+## Warn: allow-list exceptions
+
+A `--allow` flag or an allow-list config file (see
+[docs/cli.md](cli.md#allow-list-flags)) can grant an audited exception for
+one specific Warn-classified code point — for example a Nerd Font
+private-use icon glyph a project intentionally uses. Each rule requires a
+`reason`, may be scoped to specific file paths, and is reported as an
+`allow` outcome (not silently dropped): the finding, and its reason, still
+appear in human and `--json` output, they just no longer make `check`/
+`explain` fail or `fix`/`clean` remove the code point.
+
+An allow-list rule can never apply to a Block-classified code point (see
+[ADR 0003](decisions/0003-per-codepoint-allow-list.md)) — it only ever
+changes what happens to a code point already in the "flagged for human
+judgment" Warn bucket, never the fixed Trojan-Source/steganography
+protections above.
+
+**Run-length guard.** By default a rule permits only a single, isolated
+occurrence of the code point — mirroring the ZWJ/ZWNJ and variation-selector
+"single contextual use" policy above. A run of two or more consecutive
+identical occurrences of an allow-listed code point falls back to ordinary
+Warn treatment for the *entire* run (not just the occurrences past the
+cap), since a repeated identical Private-Use/format character is exactly
+the pattern used for hidden-data channels (see "Variation selectors"
+above). A rule may opt into a higher `max_run`, or explicitly `unlimited`,
+only when stated — never implied.
+
+When more than one rule matches the same code point in the same file, every
+matching rule applies: the effective cap is the loosest (largest, or
+unlimited) among them, and every matching reason is kept visible in the
+finding.
+
 ## No implicit normalization
 
 NFC, NFD, NFKC, and NFKD normalization are outside scope. Homoglyph replacement and smart-punctuation conversion are outside scope.

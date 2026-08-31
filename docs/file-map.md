@@ -1,6 +1,6 @@
 # File Map
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-08-31_
 
 ## cleaner
 
@@ -9,6 +9,13 @@ _Last updated: 2026-08-27_
 | `internal/cleaner/cleaner.go` | `Clean()`: single-pass scan, ZWJ/ZWNJ context resolution, output assembly | `internal/cleaner/tables.go` |
 | `internal/cleaner/tables.go` | Versioned code-point classification tables and `classify()` | — |
 | `internal/cleaner/cleaner_test.go` | Table-driven, context-matrix, and idempotency tests | `internal/cleaner` |
+
+## allowlist
+
+| File | Role | Key dependencies |
+|---|---|---|
+| `internal/allowlist/allowlist.go` | `ParseFlag()`/`LoadFile()`: parse `--allow`/config-file rules; `Resolve()`: path-filter and union rules into `internal/cleaner.Options.AllowRules` for one file | `internal/cleaner` |
+| `internal/allowlist/allowlist_test.go` | Rule parsing, path scoping, and overlapping-rule union tests | `internal/allowlist` |
 
 ## pre-commit integration
 

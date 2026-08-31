@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/y-marui/go-clean-invisible-text/internal/allowlist"
 	"github.com/y-marui/go-clean-invisible-text/internal/cleaner"
 )
 
@@ -17,11 +18,17 @@ func runClean(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("clean", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	keepWarnings := fs.Bool("keep-warnings", false, "preserve Warn-classified code points instead of removing them")
+	var af allowFlags
+	registerAllowFlags(fs, &af)
 	if err := fs.Parse(args); err != nil {
 		return exitError
 	}
 	if fs.NArg() > 0 {
 		fmt.Fprintln(stderr, "clean: reads standard input and takes no file arguments")
+		return exitError
+	}
+	rules, ok := loadRules(af, stderr)
+	if !ok {
 		return exitError
 	}
 
@@ -31,7 +38,8 @@ func runClean(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitError
 	}
 
-	result, err := cleaner.Clean(data, cleaner.Options{KeepWarnings: *keepWarnings})
+	// clean has no file path, so only path-less (repo-wide) rules can match.
+	result, err := cleaner.Clean(data, cleaner.Options{KeepWarnings: *keepWarnings, AllowRules: allowlist.Resolve(rules, "")})
 	if err != nil {
 		fmt.Fprintf(stderr, "clean: %v\n", err)
 		return exitError

@@ -21,6 +21,7 @@ on disk with failure-safe replacement per `docs/security-model.md`.
 |---|---|
 | `cmd/clean-invisible-text/` | `main` package; thin wrapper over `internal/cli.Run` |
 | `internal/cleaner/` | Single-pass cleaning engine: code-point tables (`tables.go`) and the scan/rewrite loop (`cleaner.go`) |
+| `internal/allowlist/` | Parses `--allow`/`--allow-file` rules and resolves them, per file path, to `internal/cleaner.Options.AllowRules` |
 | `internal/mutate/` | Safe in-place file rewriting: binary/symlink rejection, atomic same-directory replace |
 | `internal/cli/` | Subcommand dispatch (`check`/`fix`/`explain`/`clean`) and human-readable/JSON reporting |
 | `test/precommit/` | End-to-end fixture exercising the pre-commit hook contract from `.pre-commit-hooks.yaml` |
