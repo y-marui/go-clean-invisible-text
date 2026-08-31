@@ -17,9 +17,6 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.x'
       - uses: pre-commit/action@v3.0.1
         env:
           # powershell-lint is a local-only convenience check (see
