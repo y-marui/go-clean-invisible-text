@@ -140,6 +140,21 @@ func TestLoadFile_NotFound(t *testing.T) {
 	}
 }
 
+func TestLoadFile_UnknownFieldRejected(t *testing.T) {
+	// A typo like "path" instead of "paths" must fail loudly rather than
+	// silently decode to an empty Paths (turning an intended file-scoped
+	// exception into a repository-wide one).
+	dir := t.TempDir()
+	path := filepath.Join(dir, "allow.json")
+	content := `[{"codepoint": "U+E000", "reason": "icons", "path": "*.md"}]`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	if _, err := LoadFile(path); err == nil {
+		t.Fatal("LoadFile: want error for unknown field \"path\"")
+	}
+}
+
 func TestResolve_PathScoping(t *testing.T) {
 	rules := []Rule{
 		{Codepoints: []rune{0xE000}, Reason: "repo-wide"},
@@ -171,6 +186,17 @@ func TestResolve_PathScoping(t *testing.T) {
 				t.Errorf("Resolve(%q) = %v, want exactly %v", tc.path, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestResolve_WildcardPathScopedRuleNeverAppliesToEmptyPath(t *testing.T) {
+	// filepath.Base("") is ".", which a wildcard pattern like "*" would
+	// otherwise match — path-scoped rules must never apply to the clean
+	// command's pathless input, regardless of how broad the pattern is.
+	rules := []Rule{{Codepoints: []rune{0xE000}, Reason: "icons", Paths: []string{"*"}}}
+	got := Resolve(rules, "")
+	if len(got) != 0 {
+		t.Errorf("Resolve(rules, \"\") = %v, want empty (paths=* must not match a pathless invocation)", got)
 	}
 }
 

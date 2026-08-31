@@ -17,6 +17,7 @@
 package allowlist
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -115,7 +116,9 @@ func LoadFile(path string) ([]Rule, error) {
 		return nil, fmt.Errorf("allowlist: %w", err)
 	}
 	var raw []configRule
-	if err := json.Unmarshal(data, &raw); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&raw); err != nil {
 		return nil, fmt.Errorf("allowlist: %s: %w", path, err)
 	}
 	rules := make([]Rule, 0, len(raw))
@@ -196,9 +199,18 @@ func parseMaxRun(value string) (int, error) {
 // path's base name, so `*.md` matches a file in any directory. Neither form
 // crosses directory boundaries the way a `**` glob would — patterns without
 // a literal directory component only ever match by base name.
+//
+// path == "" means the caller (the clean command) has no file path at all;
+// a nonempty patterns can never match it — without this, filepath.Base("")
+// returns ".", which a wildcard pattern like paths=* would otherwise match,
+// contradicting the documented "clean has no file path, so a paths-scoped
+// rule never applies to it" behavior.
 func matchesPath(patterns []string, path string) bool {
 	if len(patterns) == 0 {
 		return true
+	}
+	if path == "" {
+		return false
 	}
 	base := filepath.Base(path)
 	for _, p := range patterns {
