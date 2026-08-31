@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+
+	"github.com/y-marui/go-clean-invisible-text/internal/allowlist"
 )
 
 // runExplain implements the explain command: show code point, Unicode name,
@@ -12,6 +14,8 @@ func runExplain(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("explain", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	jsonOut := fs.Bool("json", false, "emit a machine-readable JSON report to stdout")
+	var af allowFlags
+	registerAllowFlags(fs, &af)
 	if err := fs.Parse(args); err != nil {
 		return exitError
 	}
@@ -20,11 +24,15 @@ func runExplain(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "explain: at least one file is required")
 		return exitError
 	}
+	rules, ok := loadRules(af, stderr)
+	if !ok {
+		return exitError
+	}
 
 	exit := exitOK
 	reports := make([]fileReport, 0, len(files))
 	for _, path := range files {
-		data, result, err := analyzeFile(path)
+		data, result, err := analyzeFile(path, allowlist.Resolve(rules, path))
 		if err != nil {
 			r := errorReport(path, err)
 			reports = append(reports, r)
@@ -39,7 +47,7 @@ func runExplain(args []string, stdout, stderr io.Writer) int {
 		if !*jsonOut {
 			renderDetailed(stderr, r)
 		}
-		if len(result.Findings) > 0 {
+		if actionableFindings(result.Findings) {
 			exit = worstExit(exit, exitFindings)
 		}
 	}

@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- Per-code-point/file allow-list ([Issue #26](https://github.com/y-marui/go-clean-invisible-text/issues/26),
+  [ADR 0003](docs/decisions/0003-per-codepoint-allow-list.md)): repeatable
+  `--allow` flags and a `--allow-file`/`.clean-invisible-text-allow.json`
+  config file grant an audited, required-`reason` exception for a specific
+  Warn-classified code point, optionally scoped to file path globs, with a
+  run-length guard (default: a single isolated occurrence) that falls back
+  to ordinary Warn treatment for a longer run. The mechanism can never
+  affect a Block-classified code point. A new `internal/allowlist` package
+  implements rule parsing and resolution; `internal/cleaner` gains
+  `ActionAllow` and `Finding.Reason`; the `--json` contract gains the
+  `allow` action value and an optional `reason` field (additive, per
+  [ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md)).
+  `check`/`explain` no longer fail over a file whose only findings are
+  allow-listed.
+
 ## [1.0.0] - 2026-08-27
 
 ### Added

@@ -3,10 +3,10 @@
 The installed command is `clean-invisible-text` (`cmd/clean-invisible-text`).
 
 ```console
-clean-invisible-text check [--json] FILE...
-clean-invisible-text fix [--json] [--keep-warnings] FILE...
-clean-invisible-text explain [--json] FILE...
-clean-invisible-text clean [--keep-warnings]
+clean-invisible-text check [--json] [--allow RULE]... [--allow-file FILE] FILE...
+clean-invisible-text fix [--json] [--keep-warnings] [--allow RULE]... [--allow-file FILE] FILE...
+clean-invisible-text explain [--json] [--allow RULE]... [--allow-file FILE] FILE...
+clean-invisible-text clean [--keep-warnings] [--allow RULE]... [--allow-file FILE]
 ```
 
 Diagnostics go to standard error. Cleaned stream content goes only to
@@ -28,6 +28,66 @@ cleaned content differs from what's on disk.
   of removing them. The Finding is still reported either way; this only
   changes what ends up in the cleaned output. Not available on
   `check`/`explain`, which report every Warn finding regardless.
+- `--allow`/`--allow-file`: on every subcommand, grant an audited exception
+  to one or more Warn-classified code points. See "Allow-list flags" below.
+
+## Allow-list flags
+
+`--allow RULE` (repeatable) and `--allow-file FILE` implement the
+[allow-list exceptions](character-policy.md#warn-allow-list-exceptions)
+described by the character policy. Both are additive: rules from every
+`--allow` flag and, if present, one config file are combined for the
+invocation. If `--allow-file` is not given, a file named
+`.clean-invisible-text-allow.json` in the current directory is loaded
+automatically when it exists.
+
+A rule has four fields: `codepoint` (required), `reason` (required),
+`paths` (optional), and `max_run` (optional).
+
+`--allow` packs one rule into a single semicolon-separated `key=value`
+string:
+
+```console
+clean-invisible-text check --allow 'codepoint=U+E000;reason=Nerd Font icon glyph' notes.txt
+```
+
+- `codepoint`: one or more code points as `U+XXXX`, comma-separated for more
+  than one (`U+E000,U+E001`).
+- `reason`: free text; required and must be non-empty. It is copied onto
+  every finding the rule allows, so the exception stays visible in output.
+- `paths`: comma-separated glob patterns (`filepath.Match` syntax — no
+  recursive `**`). A pattern containing `/` is matched against the file path
+  as given on the command line; a pattern with no `/` is also matched
+  against just the file's base name, so `*.md` matches a file in any
+  directory. Omitted or empty means the rule applies to every file in the
+  invocation. `clean` has no file path, so a `paths`-scoped rule never
+  applies to it.
+- `max_run`: a positive integer, or the literal `unlimited`. Governs the
+  run-length guard described in the character policy; omitted means the
+  default of 1 (a single isolated occurrence).
+
+A config file loaded via `--allow-file` (or the default filename) is a JSON
+array of the same fields:
+
+```json
+[
+  {
+    "codepoint": "U+E000",
+    "reason": "Nerd Font icon glyph",
+    "paths": ["*.md"],
+    "max_run": 1
+  }
+]
+```
+
+`max_run` in a config file is a plain integer; use `-1` for unlimited.
+
+When a rule's condition is met, the finding's `action` is `allow` instead of
+`warn`/`remove`, and the code point is preserved in `fix`/`clean` output
+regardless of `--keep-warnings`. `check`/`explain` do not fail (exit `0`,
+not `1`) over a file whose only findings are `allow` — the allow-listed
+finding is still printed, but it isn't why the command shows it as needing
+attention.
 
 ## Human-readable diagnostics
 
@@ -44,8 +104,9 @@ is showing every finding in full:
 <path>:<line>:<col>: U+<hex> <NAME> [<category>] -> <action>
 ```
 
-`<action>` is `remove`, `replace with "<replacement>"`, or `warn`. Line and
-column are 1-indexed; column counts runes, not bytes.
+`<action>` is `remove`, `replace with "<replacement>"`, `warn`, or
+`allow (<reason>)` for a finding an [allow-list rule](#allow-list-flags)
+covers. Line and column are 1-indexed; column counts runes, not bytes.
 
 ## JSON output
 
@@ -73,6 +134,10 @@ output, one object per file, in the same shape for all three commands:
   }
 ]
 ```
+
+`reason` is present, and non-empty, only on a finding whose `action` is
+`allow` (see [Allow-list flags](#allow-list-flags)); it's omitted for every
+other action.
 
 `changed` is always present; it's only meaningful for `fix` (`check` and
 `explain` never modify a file, so it's always `false` for them). `error` is

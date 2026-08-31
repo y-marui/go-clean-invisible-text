@@ -299,6 +299,160 @@ func TestClean_IdempotentKeepWarnings(t *testing.T) {
 	}
 }
 
+// TestClean_IdempotentAllowRules mirrors TestClean_IdempotentKeepWarnings:
+// an allowed code point survives into Cleaned, so the same ActionAllow
+// Finding is expected to reappear on the second pass.
+func TestClean_IdempotentAllowRules(t *testing.T) {
+	opts := Options{AllowRules: map[rune]AllowRule{0xE000: {Reason: "icons"}}}
+	inputs := []string{
+		"ab",
+	}
+
+	for _, in := range inputs {
+		t.Run(in, func(t *testing.T) {
+			first := mustCleanOpts(t, in, opts)
+			second, err := Clean(first.Cleaned, opts)
+			if err != nil {
+				t.Fatalf("second Clean error: %v", err)
+			}
+			if !bytes.Equal(first.Cleaned, second.Cleaned) {
+				t.Errorf("not idempotent: first=%q second=%q", first.Cleaned, second.Cleaned)
+			}
+			if len(second.Findings) != len(first.Findings) {
+				t.Errorf("second pass Findings = %+v, want same as first pass %+v", second.Findings, first.Findings)
+			}
+		})
+	}
+}
+
+func TestClean_AllowRule_SingleOccurrencePreserved(t *testing.T) {
+	res := mustCleanOpts(t, "a\uE000b", Options{
+		AllowRules: map[rune]AllowRule{0xE000: {Reason: "Nerd Font icon glyph"}},
+	})
+	if string(res.Cleaned) != "a\uE000b" {
+		t.Errorf("Cleaned = %q, want unchanged", res.Cleaned)
+	}
+	if len(res.Findings) != 1 {
+		t.Fatalf("Findings = %+v, want exactly 1", res.Findings)
+	}
+	f := res.Findings[0]
+	if f.Action != ActionAllow {
+		t.Errorf("Action = %q, want %q", f.Action, ActionAllow)
+	}
+	if f.Reason != "Nerd Font icon glyph" {
+		t.Errorf("Reason = %q, want the rule's reason", f.Reason)
+	}
+}
+
+func TestClean_AllowRule_RunWithinMaxRunAllPreserved(t *testing.T) {
+	res := mustCleanOpts(t, "a\uE000\uE000\uE000b", Options{
+		AllowRules: map[rune]AllowRule{0xE000: {MaxRun: 3, Reason: "icons"}},
+	})
+	if string(res.Cleaned) != "a\uE000\uE000\uE000b" {
+		t.Errorf("Cleaned = %q, want unchanged", res.Cleaned)
+	}
+	if len(res.Findings) != 3 {
+		t.Fatalf("Findings = %+v, want exactly 3", res.Findings)
+	}
+	for _, f := range res.Findings {
+		if f.Action != ActionAllow {
+			t.Errorf("Action = %q, want %q", f.Action, ActionAllow)
+		}
+	}
+}
+
+func TestClean_AllowRule_RunPastMaxRunFallsBackToWarn(t *testing.T) {
+	// Default MaxRun (unset -> 1): a run of 2 identical allow-listed code
+	// points is exactly the hidden-channel shape the guard exists to catch,
+	// so the whole run reverts to ordinary Warn treatment, not just the
+	// excess occurrence.
+	res := mustCleanOpts(t, "a\uE000\uE000b", Options{
+		AllowRules: map[rune]AllowRule{0xE000: {Reason: "icons"}},
+	})
+	if string(res.Cleaned) != "ab" {
+		t.Errorf("Cleaned = %q, want %q (Warn is removed by default)", res.Cleaned, "ab")
+	}
+	if len(res.Findings) != 2 {
+		t.Fatalf("Findings = %+v, want exactly 2", res.Findings)
+	}
+	for _, f := range res.Findings {
+		if f.Action != ActionWarn {
+			t.Errorf("Action = %q, want %q (run exceeded MaxRun)", f.Action, ActionWarn)
+		}
+		if f.Reason != "" {
+			t.Errorf("Reason = %q, want empty once the rule no longer applies", f.Reason)
+		}
+	}
+}
+
+func TestClean_AllowRule_RunPastMaxRunKeepWarnings(t *testing.T) {
+	res := mustCleanOpts(t, "a\uE000\uE000b", Options{
+		KeepWarnings: true,
+		AllowRules:   map[rune]AllowRule{0xE000: {Reason: "icons"}},
+	})
+	if string(res.Cleaned) != "a\uE000\uE000b" {
+		t.Errorf("Cleaned = %q, want unchanged (KeepWarnings preserves the reverted Warn run)", res.Cleaned)
+	}
+}
+
+func TestClean_AllowRule_Unlimited(t *testing.T) {
+	res := mustCleanOpts(t, "a\uE000\uE000\uE000\uE000\uE000b", Options{
+		AllowRules: map[rune]AllowRule{0xE000: {MaxRun: UnlimitedRun, Reason: "icons"}},
+	})
+	if len(res.Findings) != 5 {
+		t.Fatalf("Findings = %+v, want exactly 5", res.Findings)
+	}
+	for _, f := range res.Findings {
+		if f.Action != ActionAllow {
+			t.Errorf("Action = %q, want %q", f.Action, ActionAllow)
+		}
+	}
+}
+
+func TestClean_AllowRule_DoesNotApplyToBlock(t *testing.T) {
+	// A Block-classified code point (NBSP) must never become ActionAllow,
+	// even if a caller mistakenly puts it in AllowRules: the allow-list
+	// mechanism only ever applies to ActionWarn code points.
+	res := mustCleanOpts(t, "a\u00A0b", Options{
+		AllowRules: map[rune]AllowRule{0x00A0: {Reason: "should not apply"}},
+	})
+	if string(res.Cleaned) != "a b" {
+		t.Errorf("Cleaned = %q, want %q (Block behavior unaffected)", res.Cleaned, "a b")
+	}
+	if len(res.Findings) != 1 || res.Findings[0].Action != ActionReplace {
+		t.Errorf("Findings = %+v, want a single ActionReplace finding", res.Findings)
+	}
+}
+
+func TestClean_AllowRule_UnmatchedCodepointUnaffected(t *testing.T) {
+	// A rule for a different code point must not affect this Warn finding.
+	res := mustCleanOpts(t, "a\uE000b", Options{
+		AllowRules: map[rune]AllowRule{0xE001: {Reason: "icons"}},
+	})
+	if len(res.Findings) != 1 || res.Findings[0].Action != ActionWarn {
+		t.Errorf("Findings = %+v, want a single ActionWarn finding", res.Findings)
+	}
+}
+
+func TestClean_AllowRule_RunBrokenByOtherCharacterStartsFresh(t *testing.T) {
+	// Two isolated occurrences separated by ordinary text are not a "run" -
+	// each is independently within the default MaxRun of 1.
+	res := mustCleanOpts(t, "\uE000x\uE000", Options{
+		AllowRules: map[rune]AllowRule{0xE000: {Reason: "icons"}},
+	})
+	if string(res.Cleaned) != "\uE000x\uE000" {
+		t.Errorf("Cleaned = %q, want unchanged", res.Cleaned)
+	}
+	if len(res.Findings) != 2 {
+		t.Fatalf("Findings = %+v, want exactly 2", res.Findings)
+	}
+	for _, f := range res.Findings {
+		if f.Action != ActionAllow {
+			t.Errorf("Action = %q, want %q", f.Action, ActionAllow)
+		}
+	}
+}
+
 func TestClean_InvalidUTF8(t *testing.T) {
 	_, err := Clean([]byte{0xff, 0xfe, 0x00}, Options{})
 	if err != ErrInvalidUTF8 {

@@ -60,9 +60,11 @@ $ echo "hello world" | clean-invisible-text clean
 hello world
 ```
 
-Add `--json` to `check`/`fix`/`explain` for machine-readable output, and
+Add `--json` to `check`/`fix`/`explain` for machine-readable output,
 `--keep-warnings` to `fix`/`clean` to preserve Warn-classified code points
-instead of removing them. Full contract: [docs/cli.md](docs/cli.md).
+instead of removing them, and `--allow`/`--allow-file` to any command to
+grant an audited exception to a specific Warn-classified code point. Full
+contract: [docs/cli.md](docs/cli.md).
 
 The normative behavior is defined in
 [docs/specification.md](docs/specification.md) and

@@ -34,6 +34,11 @@ const (
 	ActionRemove  ActionKind = "remove"
 	ActionReplace ActionKind = "replace"
 	ActionWarn    ActionKind = "warn"
+	// ActionAllow marks a Warn-classified code point permitted by an
+	// AllowRule (see Options.AllowRules and internal/allowlist). It is never
+	// produced for a Block-classified code point — the allow-list mechanism
+	// cannot override Block, only grant an audited exception to Warn.
+	ActionAllow ActionKind = "allow"
 )
 
 const (
