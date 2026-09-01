@@ -46,6 +46,84 @@ sha256sum -c checksums.txt --ignore-missing
 gh attestation verify clean-invisible-text-<os>-<arch> --repo y-marui/go-clean-invisible-text
 ```
 
+macOS binaries are also signed and notarised (see below); verify with:
+
+```bash
+codesign -dv --verbose=2 clean-invisible-text-darwin-<arch>
+spctl -a -t exec -vv clean-invisible-text-darwin-<arch>
+```
+
+## macOS code signing and notarization
+
+For a tagged release, the two `darwin` build jobs additionally sign the
+binary with a Developer ID Application certificate
+(`codesign --options runtime --timestamp`) and submit it to Apple's
+notary service (`xcrun notarytool submit --wait`,
+[`scripts/notarize-binary.sh`](../scripts/notarize-binary.sh)), before
+`checksums.txt`/attestation/release publishing — so the checksummed,
+attested, and published bytes are the signed-and-notarised ones. Standalone
+binaries can't have a notarization ticket stapled to them, so Gatekeeper
+looks the ticket up online from the code signature the first time the binary
+runs with the quarantine attribute set (e.g. after download via a browser).
+`workflow_dispatch` runs never touch these secrets (see the
+`if: startsWith(github.ref, 'refs/tags/')` guards in `release.yml`), so
+iterating on the workflow doesn't burn notarization requests.
+
+Consuming this project's own binaries as a third-party dependency (as
+[alfred-clean-invisible-text](https://github.com/y-marui/alfred-clean-invisible-text)
+does — see [`go-clean-invisible-text#31`](https://github.com/y-marui/go-clean-invisible-text/issues/31))
+should verify the signature after checksum/attestation verification, not
+instead of it: the checksum/attestation chain proves the bytes came from
+this repository's CI; `codesign`/`spctl` prove those bytes carry a valid
+Apple signature.
+
+### One-time secret setup (manual, @y-marui)
+
+The workflow expects five repository secrets. None of them should ever be
+committed or pasted into an issue/PR/chat — set them directly via
+`gh secret set` or the GitHub UI.
+
+**1. Export the Developer ID Application certificate as `.p12`:**
+
+Keychain Access → login keychain → My Certificates → find
+"Developer ID Application: Yukihiro Marui (7TEQWKRRX7)" → expand it, select
+both the certificate and its private key → right-click → Export 2 items… →
+save as `certificate.p12`, choosing an export password (this becomes
+`MACOS_CERTIFICATE_PASSWORD` below).
+
+```bash
+base64 -i certificate.p12 | gh secret set MACOS_CERTIFICATE_P12 \
+  --repo y-marui/go-clean-invisible-text
+gh secret set MACOS_CERTIFICATE_PASSWORD \
+  --repo y-marui/go-clean-invisible-text  # paste the export password when prompted
+rm certificate.p12  # don't leave the exported key sitting on disk
+```
+
+**2. Generate an App Store Connect API key for notarization:**
+
+[appstoreconnect.apple.com](https://appstoreconnect.apple.com/) → Users and
+Access → Integrations → App Store Connect API → generate a key with the
+"Developer" role. Apple lets you download the `.p8` private key file only
+once — save it somewhere safe until it's registered below, then delete it.
+Note the Key ID and Issuer ID shown on the same page.
+
+```bash
+base64 -i AuthKey_XXXXXXXXXX.p8 | gh secret set NOTARY_API_KEY \
+  --repo y-marui/go-clean-invisible-text
+gh secret set NOTARY_KEY_ID --repo y-marui/go-clean-invisible-text     # the Key ID
+gh secret set NOTARY_ISSUER_ID --repo y-marui/go-clean-invisible-text  # the Issuer ID
+rm AuthKey_XXXXXXXXXX.p8
+```
+
+Once all five secrets (`MACOS_CERTIFICATE_P12`, `MACOS_CERTIFICATE_PASSWORD`,
+`NOTARY_API_KEY`, `NOTARY_KEY_ID`, `NOTARY_ISSUER_ID`) exist, the next tagged
+release automatically signs and notarises both `darwin` binaries — no
+further workflow changes needed. The same Developer ID certificate and App
+Store Connect key already registered on
+[alfred-clean-invisible-text](https://github.com/y-marui/alfred-clean-invisible-text)
+can be reused here, but GitHub Actions secrets are scoped per repository, so
+they must be registered again against this repository.
+
 ## Supported architectures
 
 See [ADR 0002](decisions/0002-v1-compatibility-and-support-policy.md) for
