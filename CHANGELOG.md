@@ -4,6 +4,17 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- macOS release binaries (`darwin-amd64`, `darwin-arm64`) are now signed with
+  a Developer ID Application certificate and notarised by Apple as part of
+  `.github/workflows/release.yml`, before checksumming/attestation/publishing
+  ([Issue #31](https://github.com/y-marui/go-clean-invisible-text/issues/31)).
+  Requires five repository secrets to be configured; see
+  [docs/release-process.md](docs/release-process.md#macos-code-signing-and-notarization).
+
 ## [1.1.0] - 2026-08-31
 
 ### Added
