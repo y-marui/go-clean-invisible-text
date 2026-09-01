@@ -99,6 +99,22 @@ gh secret set MACOS_CERTIFICATE_PASSWORD \
 rm certificate.p12  # don't leave the exported key sitting on disk
 ```
 
+Two GUI pitfalls hit during the first real setup (Issue #31): the account has four
+similarly-named certificates (3rd Party Mac Developer Installer, **Apple
+Distribution**, **Developer ID Application**, Developer ID Installer) — picking
+the wrong one imports fine but makes the "Import signing certificate" step fail
+with `no Developer ID Application identity found`, since the CI script greps the
+imported keychain by that exact name. Double-check the Team ID `(7TEQWKRRX7)`
+suffix, not just "Developer ID" in the name. Separately, Keychain Access's "My
+Certificates" view sometimes fails to show a certificate as paired with its
+private key (export format options stay greyed out even though the key exists)
+— `security find-identity -v -p codesigning` is the reliable way to confirm a
+given identity actually has an exportable private key, and
+`security export -k login.keychain-db -t identities -f pkcs12 -P <password> -o certificate.p12`
+is a working CLI fallback when the GUI won't cooperate (it exports every
+identity in the keychain at once, which is fine — the import step above filters
+by name).
+
 **2. Generate an App Store Connect API key for notarization:**
 
 [appstoreconnect.apple.com](https://appstoreconnect.apple.com/) → Users and
