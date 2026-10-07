@@ -23,6 +23,12 @@
   Warn occurrence, with its reason kept visible in output, and can never
   suppress a bidi-control, tag-character, or other Block-classified finding.
 
+## Invariants
+
+The tool processes text locally and must not add telemetry or network transmission to scanning or cleaning paths. A change that adds network I/O to the scanning/cleaning path is a security regression, reported through the vulnerability reporting channel described in [SECURITY.md](../SECURITY.md).
+
+The support and response policy (best-effort acknowledgment, patch releases on the latest minor version, supported versions) is defined in [ADR 0002](decisions/0002-v1-compatibility-and-support-policy.md#security-response-and-release-policy).
+
 ## Out of scope
 
 - homoglyph and mixed-script identifier analysis;

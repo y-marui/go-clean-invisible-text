@@ -1,7 +1,20 @@
 # Security Policy
 
-Please report suspected vulnerabilities privately through GitHub Security Advisories when available. Do not include sensitive text samples in public issues.
+## Supported Versions
 
-The tool processes text locally and must not add telemetry or network transmission to scanning or cleaning paths. A change that adds network I/O to the scanning/cleaning path is a security regression, reported through this same channel.
+Only the latest release (or the default branch, if there are no releases)
+receives security fixes.
 
-Best-effort acknowledgment within 5 business days (solo-maintainer project, not an SLA). Fixes ship as a patch release on the latest minor version; only the latest released minor version is supported. Full policy: [ADR 0002](docs/decisions/0002-v1-compatibility-and-support-policy.md#security-response-and-release-policy).
+## Reporting a Vulnerability
+
+Please do not report security vulnerabilities in public issues, pull
+requests, or discussions.
+
+If private vulnerability reporting is enabled for this repository, use
+"Report a vulnerability" on the Security tab. Otherwise, open an issue
+asking for a private contact channel, without including any details of
+the vulnerability.
+
+## What to Expect
+
+Reports are handled on a best-effort basis. No response time is guaranteed.

@@ -107,7 +107,7 @@ silently into "Added".
 - No commitment to request a CVE; the maintainer may do so via GitHub's CVE
   numbering when warranted.
 - `docs/security-model.md`'s "local-only processing" and
-  `SECURITY.md`'s "must not add telemetry or network transmission" are
+  its "must not add telemetry or network transmission" (Invariants) are
   themselves security invariants: a change that adds network I/O to the
   scanning/cleaning path is treated as a security regression through this
   same disclosure path, not an ordinary bug.
