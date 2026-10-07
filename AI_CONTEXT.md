@@ -95,6 +95,6 @@ retrying via `gh`/MCP.
 
 ## Prohibited Actions
 
-- Adding telemetry or network transmission to the scanning/cleaning code paths (`docs/security-model.md`, `SECURITY.md`) — this tool is local-only
+- Adding telemetry or network transmission to the scanning/cleaning code paths (`docs/security-model.md`) — this tool is local-only
 - Committing secrets or credentials
 - Direct edits under `docs/dev-charter/`
