@@ -39,6 +39,16 @@ character-cleaning engine exists; the CLI commands do not yet.
 - Public-facing text (README, CLI/error output, commit/PR text) is English; internal Japanese is fine — `docs/dev-charter/LANGUAGE_POLICY.md`
 - Do not directly edit files under `docs/dev-charter/`; changes go through an Issue in the dev-charter repository and `git subtree pull`
 
+### Charter Lookup
+
+If a question relates to the charter, do **not** search every file; follow these steps:
+
+1. Read `docs/dev-charter/CHARTER_INDEX.md` and identify the relevant topic file
+2. Read only the identified file(s) (normally 1-2)
+3. Propose or confirm with the user after consulting it
+
+Do not guess; consult the charter before proposing or asking.
+
 ## Document Sync Rule
 
 When a spec, rule, or structural change happens, update the related documentation
