@@ -99,7 +99,7 @@ retrying via `gh`/MCP.
 
 ## AI Tool Assignments
 
-- **Tools in use**: Claude Code, Codex, GitHub Copilot, Gemini CLI, local LLM (Ollama)
+- **Tools in use**: Claude Code, Codex, GitHub Copilot, local LLM (Ollama)
 - **Canonical responsibilities**: `docs/dev-charter/AI_COLLABORATION_RULES.md`, "AI Tool Responsibilities" and "Rules for Multi-AI Usage"
 - **Project-specific overrides**: none
 
